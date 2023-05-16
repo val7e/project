@@ -29,7 +29,7 @@ public enum Value {
 		this.number = number;
 	}
 	
-	public int getNum() {
+	public int getInt() {
 		return number;
 	}
 }

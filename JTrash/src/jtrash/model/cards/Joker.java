@@ -14,10 +14,11 @@ public class Joker extends Card {
 	 * Default constructor: it creates a Joker card with the color in input and type WILD.
 	 * @param color
 	 */
-	public Joker (Color color) {
+	public Joker (Color color, boolean isFaceUp) {
 		this.color = color;
 		this.type = Type.WILD;
 		this.value = Value.JOKER;
+		this.isFaceUp = isFaceUp;
 	}
 
 	/**
