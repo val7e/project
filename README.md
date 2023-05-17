@@ -1,3 +1,2 @@
-# project
-Project: JTrash
+# Project: JTrash
 A Java card game.
