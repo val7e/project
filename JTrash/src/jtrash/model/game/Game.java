@@ -102,7 +102,8 @@ public class Game extends Observable {
 			var player = this.players.get(playerTurnPointer);
 			var hand = this.playersMap.get(player);
 			Card cardToSwap = null;
-			do {
+			// player's turn loop
+			while (true) {
 				// leggi questa if condition per ultima, prima parti dalla riga 114
 				if (cardToSwap != null && this.isSwappable(cardToSwap.getIntValue(), hand)) {
 					int index = cardToSwap.getIntValue()-1;
@@ -128,7 +129,7 @@ public class Game extends Observable {
 						break;
 					}
 				}
-			} while(cardToSwap != null);
+			}
 			playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
 		}
 	}
