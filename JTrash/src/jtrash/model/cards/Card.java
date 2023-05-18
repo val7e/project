@@ -64,5 +64,9 @@ public class Card {
 	public String toString() {
 		return suit + "_" + value + "_" + type;
 	}
+
+	public int getIntValue() {
+		return this.getValue().getInt();
+	}
 	
 }
