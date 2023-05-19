@@ -71,7 +71,7 @@ public class Game extends Observable {
 	 *  - shuffles the cards
 	 *  - creates the LinkedHashMap with each Player and its ArrayList of cards (hand)
 	 *  - deals the hand of cards to each Player
-	 *  - adds the first card to the discardDeck
+	 *  - adds the first discarded card to the discardDeck
 	 * 
 	 * @param players an ArrayList of objects Player
 	 */
@@ -98,33 +98,40 @@ public class Game extends Observable {
 		boolean gameOver = false;
 
 		int playerTurnPointer = 0;
+		
 		while (!gameOver) {
-			var player = this.players.get(playerTurnPointer);
-			var hand = this.playersMap.get(player);
+			int turn = 0;
+			Player player = this.players.get(playerTurnPointer);
+			ArrayList<Card> hand = this.playersMap.get(player);
 			Card cardToSwap = null;
 			// player's turn loop
 			while (true) {
-				// leggi questa if condition per ultima, prima parti dalla riga 114
 				if (cardToSwap != null && this.isSwappable(cardToSwap.getIntValue(), hand)) {
-					int index = cardToSwap.getIntValue()-1;
-					Card temp = hand.get(index);
-					hand.add(index, cardToSwap);
-					cardToSwap = temp;
+					cardToSwap = this.swap(cardToSwap, hand);
 					continue;
+				} else if (turn != 0) {
+					discardDeck.add(cardToSwap);
+					break;
 				}
-				// pick discarded first 
-				cardToSwap = this.discardDeck.peek();
+				// pick discarded card first and increment turn
+				if (discardDeck.size() != 0) {
+					cardToSwap = this.discardDeck.peek();
+					turn++;
+				}
 				// swap it if you have a face down slot
 				if (this.isSwappable(cardToSwap.getIntValue(), hand)) {
-					cardToSwap = this.swap(cardToSwap, hand, discardDeck);
+					discardDeck.removeCard(cardToSwap);
+					cardToSwap = this.swap(cardToSwap, hand);
+				// else pick a facedown card from the default deck and increment turn
 				} else {
-					// else pick a facedown card from the default deck
 					cardToSwap = this.deck.drawCard();
+					turn++;
 					// swap again if possible
 					if (this.isSwappable(cardToSwap.getIntValue(), hand)) {
-						cardToSwap = this.swap(cardToSwap, hand, deck);
+						deck.removeCard(cardToSwap);
+						cardToSwap = this.swap(cardToSwap, hand);
 					} else {
-						// nothing else to do
+						discardDeck.add(cardToSwap);
 						// interrupt the player's turn
 						break;
 					}
@@ -138,21 +145,24 @@ public class Game extends Observable {
 	 * A method that checks if the top card in the discard deck is useful to the player.
 	 * @param topCard the top card in the discard deck,
 	 * @param hand the hand of cards of the player.
-	 * @return 
-	 * 		true if the index equals to the integer of the topCard in the hand has a face down card (USEFUL CARD),
-	 * 		false if not (NOT USEFUL CARD).
+	 * @return  true:  if the card at the index intTopCard-1 of the hand has a face down card (USEFUL CARD),
+	 *          false: if not (NOT USEFUL CARD).
+	 * 	TO DO: borderline cases to handle:
+	 * 		- WILD cards: KING and JOKER -> return ??
+	 * 		- BLANK cards: JACK and QUEEN -> return false.
+	 * 		at the moment the return false.
 	 */
 	public boolean isSwappable(int intTopCard, ArrayList<Card> hand) {
-		// true if card at the index intTopCard of the hand Card is face down.
-		return !hand.get(intTopCard-1).isFaceUp();
+		if (intTopCard == 11 || intTopCard == 0) return false;
+		else return !hand.get(intTopCard-1).isFaceUp();
 	}
 	
-	public Card swap(Card topCard, ArrayList<Card> hand, Deck deck) {
-		var intTopCard = topCard.getIntValue();
-		Card card = hand.remove(intTopCard);
-		hand.add(intTopCard-1, topCard);
-		deck.removeCard(topCard);
-		card = hand.get(intTopCard-1);
+	public Card swap(Card topCard, ArrayList<Card> hand) {
+		int intTopCard = topCard.getIntValue() - 1;
+		Card card = hand.get(intTopCard);
+		hand.remove(intTopCard);
+		hand.add(intTopCard, topCard);
+		hand.get(intTopCard).setFaceUp(true);
 		return card;
 	}
 	

@@ -17,7 +17,7 @@ public class Joker extends Card {
 	public Joker (Color color, boolean isFaceUp) {
 		this.color = color;
 		this.type = Type.WILD;
-		this.value = Value.JOKER;
+		this.value = Value.KING; // because it has the same value then KING 
 		this.isFaceUp = isFaceUp;
 	}
 

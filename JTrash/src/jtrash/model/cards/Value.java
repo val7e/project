@@ -18,10 +18,9 @@ public enum Value {
 	OTTO(8), 
 	NOVE(9),
 	DIECI(10),
-	JACK(11),
-	QUEEN(11),
-	KING(0),
-	JOKER(0);
+	JACK(0),
+	QUEEN(0),
+	KING(0);
 	
 	private final int number;
 	
