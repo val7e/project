@@ -28,10 +28,9 @@ public class DefaultDeck implements Deck {
 		ArrayList<Card> cards = new ArrayList<Card>();
 		for (Suit suit : Suit.values()) {
 			for (Value value : Value.values()) {
-				if (value != Value.KING) {
-					cards.add(new Card(suit, value, Type.NOT_WILD, false));
-				}
-				else cards.add(new Card(suit, value, Type.WILD, false));
+				if (value == Value.KING) cards.add(new Card(suit, value, Type.WILD, false));
+				else if (value == Value.JACK || value == Value.QUEEN) cards.add(new Card(suit, value, Type.BLANK, false));
+				else cards.add(new Card(suit, value, Type.NUMBER, false));
 			}
 		}
 		for (int i = 0; i < 1; i++) {
