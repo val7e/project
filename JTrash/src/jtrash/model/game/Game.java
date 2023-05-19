@@ -94,57 +94,42 @@ public class Game extends Observable {
 	 * The method that is invoked to actually start the game; it contains all the core logic of the card game.
 	 */
 	public void start() {
-		/**
-		 * - pesco carta:
-		 *    - if la prima carta del discardDeck discardDeck.peek() non ce l'ho pesco quella: discardDeck.pop(),
-		 *    - else pesco una coperta dal deck: deck.drawCard();
-		 * - if la carta in posizone==value pescata è ancora coperta -> swappo pescata con carta in hand
-		 *    - continuo while value carta pescata==posizione coperta
-		 *    - break value carta pescata == posizione già girata
-		 * - if la posizione è già occupata da corretta/wildcard then scarto la carta -> discardDeck.push(carta)
-		 * 
-		 */
-		int turn = 3;
-		while(turn!=0) {
-			/**
-			 *  discardDeck.peek().getValue() == numero della carta in top
-			 */
-			
-			
-			for (Player player : this.players) {
-				ArrayList<Card> hand = playersMap.get(player);
-				
-				System.out.println(player.getNickname() + ": " + hand);
-				
-				Card topCard = discardDeck.peek();
-				int intTopCard = topCard.getValue().getInt();
-				if (checkCard(intTopCard, hand)) {
-					System.out.println("Pesco" + topCard.toString());
-					
-					// swap the topCard with the card at the index intTopCard
-					Card newCard = swap(topCard, intTopCard, hand, discardDeck);
-					System.out.println(newCard.toString());
-					turn--;
-					
-				} else {
-					topCard = deck.drawCard();
-					intTopCard = topCard.getValue().getInt();
-					if (checkCard(intTopCard, hand)) {
-						System.out.println("Pesco" + topCard.toString());
-						
-						// swap the topCard with the card at the index intTopCard
-						Card newCard = swap(topCard, intTopCard, hand, deck);
-						System.out.println(newCard.toString());
-						turn--;
-					} else {
-						System.out.println("Next player: ");
-						turn--;
-					}
 
+		boolean gameOver = false;
+
+		int playerTurnPointer = 0;
+		while (!gameOver) {
+			var player = this.players.get(playerTurnPointer);
+			var hand = this.playersMap.get(player);
+			Card cardToSwap = null;
+			do {
+				// leggi questa if condition per ultima, prima parti dalla riga 114
+				if (cardToSwap != null && this.isSwappable(cardToSwap.getIntValue(), hand)) {
+					int index = cardToSwap.getIntValue()-1;
+					Card temp = hand.get(index);
+					hand.add(index, cardToSwap);
+					cardToSwap = temp;
+					continue;
 				}
-
-				
-			}
+				// pick discarded first 
+				cardToSwap = this.discardDeck.peek();
+				// swap it if you have a face down slot
+				if (this.isSwappable(cardToSwap.getIntValue(), hand)) {
+					cardToSwap = this.swap(cardToSwap, hand, discardDeck);
+				} else {
+					// else pick a facedown card from the default deck
+					cardToSwap = this.deck.drawCard();
+					// swap again if possible
+					if (this.isSwappable(cardToSwap.getIntValue(), hand)) {
+						cardToSwap = this.swap(cardToSwap, hand, deck);
+					} else {
+						// nothing else to do
+						// interrupt the player's turn
+						break;
+					}
+				}
+			} while(cardToSwap != null);
+			playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
 		}
 	}
 	
@@ -156,12 +141,13 @@ public class Game extends Observable {
 	 * 		true if the index equals to the integer of the topCard in the hand has a face down card (USEFUL CARD),
 	 * 		false if not (NOT USEFUL CARD).
 	 */
-	public boolean checkCard(int intTopCard, ArrayList<Card> hand) {
+	public boolean isSwappable(int intTopCard, ArrayList<Card> hand) {
 		// true if card at the index intTopCard of the hand Card is face down.
 		return !hand.get(intTopCard-1).isFaceUp();
 	}
 	
-	public Card swap(Card topCard, int intTopCard, ArrayList<Card> hand, Deck deck) {
+	public Card swap(Card topCard, ArrayList<Card> hand, Deck deck) {
+		var intTopCard = topCard.getIntValue();
 		Card card = hand.remove(intTopCard);
 		hand.add(intTopCard-1, topCard);
 		deck.removeCard(topCard);
