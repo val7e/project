@@ -20,7 +20,7 @@ public enum Value {
 	DIECI(10),
 	JACK(0),
 	QUEEN(0),
-	KING(0);
+	KING(11);
 	
 	private final int number;
 	

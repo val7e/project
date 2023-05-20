@@ -9,6 +9,7 @@ import jtrash.model.cards.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Observable;
+import java.util.Scanner;
 
 
 /**
@@ -84,7 +85,7 @@ public class Game extends Observable {
 				hand.add(deck.drawCard());
 			}
 			playersMap.put(player, hand);
-	    	System.out.println(player.getNickname() + playersMap.get(player));
+	    	
 		}
 		discardDeck.add(deck.drawCard());
 		
@@ -122,7 +123,7 @@ public class Game extends Observable {
 				if (this.isSwappable(cardToSwap.getIntValue(), hand)) {
 					discardDeck.removeCard(cardToSwap);
 					cardToSwap = this.swap(cardToSwap, hand);
-				// else pick a facedown card from the default deck and increment turn
+				// else pick a face down card from the default deck and increment turn
 				} else {
 					cardToSwap = this.deck.drawCard();
 					turn++;
@@ -153,12 +154,30 @@ public class Game extends Observable {
 	 * 		at the moment the return false.
 	 */
 	public boolean isSwappable(int intTopCard, ArrayList<Card> hand) {
-		if (intTopCard == 11 || intTopCard == 0) return false;
+		if (intTopCard == 0) return false;
+		if (intTopCard == 11) return true;
 		else return !hand.get(intTopCard-1).isFaceUp();
 	}
 	
+	/**
+	 * 
+	 * @param topCard
+	 * @param hand
+	 * @return
+	 */
 	public Card swap(Card topCard, ArrayList<Card> hand) {
 		int intTopCard = topCard.getIntValue() - 1;
+		if (topCard.getType() == Type.WILD) {
+			// il player deve decidere quale carta swappare con la wild quindi devo registrare input da tastiera
+			Scanner inputIndex = new Scanner(System.in);
+		    System.out.print("Where do you want to put the wild card? ");
+		    String str = inputIndex.next();
+		    try {
+		    	intTopCard = Integer.parseInt(str)-1;
+		    } catch (NumberFormatException e) {
+		    	e.printStackTrace();
+		    }
+		} 
 		Card card = hand.get(intTopCard);
 		hand.remove(intTopCard);
 		hand.add(intTopCard, topCard);
