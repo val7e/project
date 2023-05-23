@@ -33,9 +33,13 @@ public class DefaultDeck implements Deck {
 				else cards.add(new Card(suit, value, Type.NUMBER, false));
 			}
 		}
-		for (int i = 0; i < 1; i++) {
-			cards.add(new Joker(Color.BLACK, false));
-			cards.add(new Joker(Color.RED, false));
+//		for (int i = 0; i < 1; i++) {
+//			cards.add(new Joker(Color.BLACK, false));
+//			cards.add(new Joker(Color.RED, false));
+//		}
+		
+		for (Color color : Color.values()) {
+			cards.add(new Joker(color, false));
 		}
 	
 		return cards;

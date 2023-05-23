@@ -45,6 +45,7 @@ public class Game extends Observable {
 		this.players = listPlayers;
 		prepareGame(players);
 		
+		
 //		NON POSSO CREARE LISTA PLAYERS DENTRO GAME
 //		this.players = new ArrayList<Player>();
 //		Player user = new Player("Vale");
@@ -96,11 +97,15 @@ public class Game extends Observable {
 	 */
 	public void start() {
 
+		//boolean to handle the game
 		boolean gameOver = false;
+		
+		// boolean to handle the rounds
+		boolean roundOver= false;
 
 		int playerTurnPointer = 0;
 		
-		while (!gameOver) {
+		while (!roundOver) {
 			int turn = 0;
 			Player player = this.players.get(playerTurnPointer);
 			ArrayList<Card> hand = this.playersMap.get(player);
@@ -138,32 +143,46 @@ public class Game extends Observable {
 					}
 				}
 			}
+			roundOver = isLastTurn(hand); // if this method is true the remaining players can only perform a turn each.
+			
 			playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
 		}
 	}
 	
 	/**
-	 * A method that checks if the top card in the discard deck is useful to the player.
-	 * @param topCard the top card in the discard deck,
+	 * A method that checks if the pulled out card is useful to the player.
+	 * @param topCard the top card i.e. the pulled out card (from deck or discardDeck),
 	 * @param hand the hand of cards of the player.
-	 * @return  true:  if the card at the index intTopCard-1 of the hand has a face down card (USEFUL CARD),
+	 * @return  true:  if the card at the index intTopCard-1 of the hand 
+	 * 						has a face down card (USEFUL CARD), or
+	 * 						has a face up card but the slot is kept by a wild card.
 	 *          false: if not (NOT USEFUL CARD).
-	 * 	TO DO: borderline cases to handle:
-	 * 		- WILD cards: KING and JOKER -> return ??
+	 * 	Borderline cases handled:
+	 * 		- WILD cards: KING and JOKER -> condition explained previously
 	 * 		- BLANK cards: JACK and QUEEN -> return false.
-	 * 		at the moment the return false.
+	 * 
+	 * try catch block to remove
 	 */
 	public boolean isSwappable(int intTopCard, ArrayList<Card> hand) {
-		if (intTopCard == 0) return false;
-		if (intTopCard == 11) return true;
+		if (intTopCard == 0) return false; // 0 equals Jack and Queen
+		if (intTopCard == 11) return true; // 11 equals King and Joker
+		try {
+			System.out.println("indice carta da pescata: " + intTopCard);
+			System.out.println("Carta in hand: " + hand.get(intTopCard-1) +" è " + hand.get(intTopCard-1).isFaceUp()+" indice carta in hand da swappare: " + hand.get(intTopCard-1).getValue().getInt());
+		}
+		catch (IndexOutOfBoundsException e) {
+			e.printStackTrace();
+		}
+		// checking if the card in the hand is face up and the slot in the hand is kept by a wild card
+		if (hand.get(intTopCard-1).isFaceUp() && hand.get(intTopCard-1).getType() == Type.WILD) return true;
 		else return !hand.get(intTopCard-1).isFaceUp();
 	}
 	
 	/**
-	 * 
-	 * @param topCard
-	 * @param hand
-	 * @return
+	 * A method that swaps the card at the index intTopCard with the card just pulled out
+	 * @param topCard the card just pulled out
+	 * @param hand the hand of cards of the player.
+	 * @return the card that was in place of the one just placed.
 	 */
 	public Card swap(Card topCard, ArrayList<Card> hand) {
 		int intTopCard = topCard.getIntValue() - 1;
@@ -178,11 +197,33 @@ public class Game extends Observable {
 		    	e.printStackTrace();
 		    }
 		} 
+		// saving the card to swap in card variable
 		Card card = hand.get(intTopCard);
+		// removing the card from the hand
 		hand.remove(intTopCard);
+		// adding the swapped card at the correct index
 		hand.add(intTopCard, topCard);
+		// setting the isFaceUp value to true in the swapped card
 		hand.get(intTopCard).setFaceUp(true);
 		return card;
 	}
 	
+	/**
+	 * A method that checks if the current player has completed the hand, Ace to 10.
+	 * You can win even if you have some wild cards in place, so we need to check only the isFaceUp field.
+	 * @param hand the hand of cards of the player.
+	 * @return 	true: if every card of the hand is face up,
+	 * 			false: if not.
+	 */
+	public boolean isLastTurn(ArrayList<Card> hand) {
+		for (Card card : hand) {
+			if (card.isFaceUp() == false) {
+				System.out.println("Next player.");
+				return false;
+			}
+		}
+		System.out.println("Trash!");
+		return true;
+	
+	}
 }
