@@ -66,6 +66,12 @@ public class DefaultDeck implements Deck {
 	public int size() {
 		return this.cards.size();
 	}
+
+	@Override
+	public boolean isEmpty() {
+		if (size() == 0) return true;
+		else return false;
+	}
 	
 	@Override
 	public Card drawCard() {
@@ -81,5 +87,17 @@ public class DefaultDeck implements Deck {
 	public String getDeck() {
 		return this.cards.toString();
 	}
+
+	@Override
+	public void add(Card card) {
+		this.cards.add(card);
+		
+	}
+
+	@Override
+	public ArrayList<Card> getCards(){
+		return cards;
+	}
+
 
 }

@@ -28,6 +28,12 @@ public class DiscardDeck implements Deck {
 	public int size() {
 		return this.cards.size();
 	}
+	
+	@Override
+	public boolean isEmpty() {
+		if (size() == 0) return true;
+		else return false;
+	}
 
 	@Override
 	public Card drawCard() {
@@ -43,6 +49,10 @@ public class DiscardDeck implements Deck {
 	public String getDeck() {
 		return this.cards.toString();
 	}
-
-
+	
+	@Override
+	public ArrayList<Card> getCards(){
+		return cards;
+	}
+	
 }

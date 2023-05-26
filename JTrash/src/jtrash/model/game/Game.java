@@ -85,8 +85,7 @@ public class Game extends Observable {
 			for (int i = 1; i <= 10; i++) {
 				hand.add(deck.drawCard());
 			}
-			playersMap.put(player, hand);
-	    	
+			playersMap.put(player, hand);	
 		}
 		discardDeck.add(deck.drawCard());
 		
@@ -97,21 +96,30 @@ public class Game extends Observable {
 	 */
 	public void start() {
 
-		//boolean to handle the game
+		// boolean to handle the game
 		boolean gameOver = false;
 		
 		// boolean to handle the rounds
-		boolean roundOver= false;
+		boolean roundOver = false;
+		
+		// boolean to handle last turn
+		boolean lastTurn = false;
 
 		int playerTurnPointer = 0;
 		
-		while (!roundOver) {
+		while (!roundOver || lastTurn) {
 			int turn = 0;
 			Player player = this.players.get(playerTurnPointer);
 			ArrayList<Card> hand = this.playersMap.get(player);
 			Card cardToSwap = null;
 			// player's turn loop
 			while (true) {
+				//if deck is empty, need to restart it
+				if (deck.isEmpty()) {
+					deck.getCards().addAll(discardDeck.getCards());
+					discardDeck.getCards().removeAll(deck.getCards());
+					discardDeck.add(deck.drawCard());
+				}
 				if (cardToSwap != null && this.isSwappable(cardToSwap.getIntValue(), hand)) {
 					cardToSwap = this.swap(cardToSwap, hand);
 					continue;
@@ -120,7 +128,7 @@ public class Game extends Observable {
 					break;
 				}
 				// pick discarded card first and increment turn
-				if (discardDeck.size() != 0) {
+				if (!discardDeck.isEmpty()) {
 					cardToSwap = this.discardDeck.peek();
 					turn++;
 				}
@@ -144,6 +152,11 @@ public class Game extends Observable {
 				}
 			}
 			roundOver = isLastTurn(hand); // if this method is true the remaining players can only perform a turn each.
+//			if (roundOver) {
+//				lastTurn = true;
+//				
+//				
+//			}
 			
 			playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
 		}
@@ -168,7 +181,7 @@ public class Game extends Observable {
 		if (intTopCard == 11) return true; // 11 equals King and Joker
 		try {
 			System.out.println("indice carta da pescata: " + intTopCard);
-			System.out.println("Carta in hand: " + hand.get(intTopCard-1) +" è " + hand.get(intTopCard-1).isFaceUp()+" indice carta in hand da swappare: " + hand.get(intTopCard-1).getValue().getInt());
+			System.out.println("Carta in hand: " + hand.get(intTopCard-1) +" è " + hand.get(intTopCard-1).isFaceUp()+  "ed è " + hand.get(intTopCard-1).getType());
 		}
 		catch (IndexOutOfBoundsException e) {
 			e.printStackTrace();
