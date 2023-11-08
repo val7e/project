@@ -24,6 +24,7 @@ public class Card {
 		this.value = value;
 		this.type = type;
 		this.setFaceUp(isFaceUp);
+//		this.isFaceUp = true;
 	}
 	
 	/**
@@ -62,7 +63,7 @@ public class Card {
 	
 	@Override
 	public String toString() {
-		return suit + "_" + value + "_" + type;
+		return suit + "_" + value;
 	}
 
 	public int getIntValue() {

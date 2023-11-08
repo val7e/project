@@ -107,9 +107,10 @@ public class Game extends Observable {
 
 		int playerTurnPointer = 0;
 		
-		while (!roundOver || lastTurn) {
+		while (!roundOver) {
 			int turn = 0;
 			Player player = this.players.get(playerTurnPointer);
+			System.out.println(player.getNickname());
 			ArrayList<Card> hand = this.playersMap.get(player);
 			Card cardToSwap = null;
 			// player's turn loop
@@ -150,16 +151,13 @@ public class Game extends Observable {
 						break;
 					}
 				}
-			}
-			roundOver = isLastTurn(hand); // if this method is true the remaining players can only perform a turn each.
-//			if (roundOver) {
-//				lastTurn = true;
-//				
-//				
-//			}
-			
+			} 
 			playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
+			if (playerTurnPointer+1 == this.players.size() && isLastTurn(hand)) {
+				roundOver = true;
+			}
 		}
+		
 	}
 	
 	/**
@@ -180,8 +178,9 @@ public class Game extends Observable {
 		if (intTopCard == 0) return false; // 0 equals Jack and Queen
 		if (intTopCard == 11) return true; // 11 equals King and Joker
 		try {
-			System.out.println("indice carta da pescata: " + intTopCard);
-			System.out.println("Carta in hand: " + hand.get(intTopCard-1) +" è " + hand.get(intTopCard-1).isFaceUp()+  "ed è " + hand.get(intTopCard-1).getType());
+			System.out.println("valore carta da pescata: " + intTopCard);
+			System.out.println("Carta alla posizione " + intTopCard + ": " + hand.get(intTopCard-1) +" è face up: " + hand.get(intTopCard-1).isFaceUp()+  " "
+					+ "ed è di tipo " + hand.get(intTopCard-1).getType());
 		}
 		catch (IndexOutOfBoundsException e) {
 			e.printStackTrace();
@@ -218,6 +217,7 @@ public class Game extends Observable {
 		hand.add(intTopCard, topCard);
 		// setting the isFaceUp value to true in the swapped card
 		hand.get(intTopCard).setFaceUp(true);
+		System.out.println("Metto " + topCard +  " alla posizione " + topCard.getIntValue() + " e pesco " + card);
 		return card;
 	}
 	
@@ -229,14 +229,37 @@ public class Game extends Observable {
 	 * 			false: if not.
 	 */
 	public boolean isLastTurn(ArrayList<Card> hand) {
+		boolean check = false;
+		int i = 0;
+		
 		for (Card card : hand) {
 			if (card.isFaceUp() == false) {
 				System.out.println("Next player.");
-				return false;
+				check = false;
 			}
 		}
-		System.out.println("Trash!");
-		return true;
+		
+		
+		while (i < 10) {
+			for (Card card : hand) {
+				if (card.isFaceUp() == true) {
+					i++;
+				}
+				else break;
+			}
+		}
 	
+		if (i == 9) {
+			System.out.println("Trash!");
+			System.out.println(hand);
+			check = true;
+		}
+		
+			
+			
+		
+		
+		return check;
 	}
+
 }
