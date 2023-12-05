@@ -20,7 +20,6 @@ import java.util.Scanner;
 public class Game extends Observable {
 	private DefaultDeck deck;
 	private DiscardDeck discardDeck;
-//	private int numPlayers;
 	private ArrayList<Player> players;
 	private LinkedHashMap<Player,ArrayList<Card>> playersMap;
 	
@@ -96,13 +95,13 @@ public class Game extends Observable {
 	 */
 	public void start() {
 
-		// boolean to handle the game
+		// boolean to handle the game (TO HANDLE)
 		boolean gameOver = false;
 		
 		// boolean to handle the rounds
 		boolean roundOver = false;
 		
-		// boolean to handle last turn
+		// boolean to handle last turn (handled with method isLastTurn)
 		boolean lastTurn = false;
 
 		int playerTurnPointer = 0;
@@ -110,7 +109,7 @@ public class Game extends Observable {
 		while (!roundOver) {
 			int turn = 0;
 			Player player = this.players.get(playerTurnPointer);
-			System.out.println(player.getNickname());
+			System.out.println("Turno di: " + player.getNickname());
 			ArrayList<Card> hand = this.playersMap.get(player);
 			Card cardToSwap = null;
 			// player's turn loop
@@ -153,10 +152,24 @@ public class Game extends Observable {
 				}
 			} 
 			playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
-			if (playerTurnPointer+1 == this.players.size() && isLastTurn(hand)) {
-				roundOver = true;
+			if (isLastTurn(hand)) {
+				lastTurn = true;
 			}
+			
+			if (lastTurn == true) {
+				roundOver = true;
+				Player winner = this.players.get(playerTurnPointer);
+			}
+			
+			if (roundOver == true) {
+				Player winner = this.players.get(playerTurnPointer);
+				System.out.println(winner.getNickname() + "è il vincitore del round!");
+			}
+			
 		}
+		
+		
+		 
 		
 	}
 	
@@ -179,13 +192,12 @@ public class Game extends Observable {
 		if (intTopCard == 11) return true; // 11 equals King and Joker
 		try {
 			System.out.println("valore carta da pescata: " + intTopCard);
-			System.out.println("Carta alla posizione " + intTopCard + ": " + hand.get(intTopCard-1) +" è face up: " + hand.get(intTopCard-1).isFaceUp()+  " "
-					+ "ed è di tipo " + hand.get(intTopCard-1).getType());
+			System.out.println("Carta alla posizione " + intTopCard + ": " + hand.get(intTopCard-1) +" è girata? " + hand.get(intTopCard-1).isFaceUp());
 		}
 		catch (IndexOutOfBoundsException e) {
 			e.printStackTrace();
 		}
-		// checking if the card in the hand is face up and the slot in the hand is kept by a wild card
+		// checking if the card in the hand is face up but the slot in the hand is kept by a wild card
 		if (hand.get(intTopCard-1).isFaceUp() && hand.get(intTopCard-1).getType() == Type.WILD) return true;
 		else return !hand.get(intTopCard-1).isFaceUp();
 	}
@@ -199,30 +211,44 @@ public class Game extends Observable {
 	public Card swap(Card topCard, ArrayList<Card> hand) {
 		int intTopCard = topCard.getIntValue() - 1;
 		if (topCard.getType() == Type.WILD) {
-			// il player deve decidere quale carta swappare con la wild quindi devo registrare input da tastiera
+			// for now the player chooses which card wants to swap with the wild one by console input 
 			Scanner inputIndex = new Scanner(System.in);
 		    System.out.print("Where do you want to put the wild card? ");
+		    
 		    String str = inputIndex.next();
 		    try {
 		    	intTopCard = Integer.parseInt(str)-1;
+		        // Controlla se il numero è positivo
+		        while (hand.get(intTopCard).isFaceUp()) {
+		            System.out.println("Input non valido. Inserisci la posizione di una carta non girata:");
+		            
+		            intTopCard = inputIndex.nextInt()-1;
+		        }
 		    } catch (NumberFormatException e) {
 		    	e.printStackTrace();
 		    }
-		} 
+//		    inputIndex.close();
+		}
+		System.out.println(intTopCard);
 		// saving the card to swap in card variable
 		Card card = hand.get(intTopCard);
+		if (card.isFaceUp()) {
+			System.out.println("La carta da scartare è girata, quindi non potrei.");
+		} else System.out.println("La carta da scartare è coperta quindi posso scambiarla.");
 		// removing the card from the hand
 		hand.remove(intTopCard);
 		// adding the swapped card at the correct index
 		hand.add(intTopCard, topCard);
 		// setting the isFaceUp value to true in the swapped card
 		hand.get(intTopCard).setFaceUp(true);
-		System.out.println("Metto " + topCard +  " alla posizione " + topCard.getIntValue() + " e pesco " + card);
+		int posizione = intTopCard+1;
+		System.out.println("Metto " + topCard +  " all'indice " + intTopCard + "cioè alla posizione " + posizione + " e pesco " + card);
 		return card;
 	}
 	
 	/**
 	 * A method that checks if the current player has completed the hand, Ace to 10.
+	 * This method needs to be executed after every player has completed his swapping, so after he discards a card.
 	 * You can win even if you have some wild cards in place, so we need to check only the isFaceUp field.
 	 * @param hand the hand of cards of the player.
 	 * @return 	true: if every card of the hand is face up,
@@ -233,31 +259,11 @@ public class Game extends Observable {
 		int i = 0;
 		
 		for (Card card : hand) {
-			if (card.isFaceUp() == false) {
-				System.out.println("Next player.");
-				check = false;
-			}
+			if (card.isFaceUp() == true) i++;
 		}
+		System.out.println(i);
 		
-		
-		while (i < 10) {
-			for (Card card : hand) {
-				if (card.isFaceUp() == true) {
-					i++;
-				}
-				else break;
-			}
-		}
-	
-		if (i == 9) {
-			System.out.println("Trash!");
-			System.out.println(hand);
-			check = true;
-		}
-		
-			
-			
-		
+		if (i==9) check = true;
 		
 		return check;
 	}
