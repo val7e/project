@@ -70,4 +70,11 @@ public class Card {
 		return this.getValue().getInt();
 	}
 	
+	public int getIndexValue() {
+		int x = this.getValue().getInt();
+		int y = 1;
+		int z = x-y;
+		return z;
+	}
+	
 }
