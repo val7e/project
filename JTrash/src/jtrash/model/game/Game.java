@@ -8,16 +8,15 @@ import jtrash.model.cards.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.Observable;
 import java.util.Scanner;
+import java.util.stream.IntStream;
 
 
 /**
  * @author val7e
  *
  */
-@SuppressWarnings("deprecation")
-public class Game extends Observable {
+public class Game implements Observer {
 	private DefaultDeck deck;
 	private DiscardDeck discardDeck;
 	private ArrayList<Player> players;
@@ -130,14 +129,20 @@ public class Game extends Observable {
 		ArrayList<Player> winners = new ArrayList<Player>();
 		
 		int playerTurnPointer = 0;
+		int control = 0;
 		
-		while (!roundOver) {
-			int turn = 0;
+		outerLoop: while (!roundOver) {
 			
 			// player's turn loop
 			while (true) {
+				System.out.println("playerTurnPointer " + playerTurnPointer);
 				// selecting the current player
 				Player player = this.players.get(playerTurnPointer);
+				
+				while (winners.contains(player)) {
+					roundOver = true;
+					break outerLoop;
+				}
 				System.out.println("Turno di: " + player.getNickname());
 				
 				//fetching the hand of the current player
@@ -174,14 +179,20 @@ public class Game extends Observable {
 				System.out.println(player.getNickname() + " scarta " + cardToSwap);
 				
 				if (isLastTurn(hand)) {
-					//check if game is over
+					// check if game is over
 					if (hand.size() == 1 && hand.get(0).isFaceUp()) {
 						roundOver = true;
-					} else winners.add(player);
+					}
+					// add winner of the round to the list of winners
+					winners.add(player);
+					System.out.println(player.getNickname() + "says Trash!");
+					
+					
 				}
-				turn++;
+				
 				playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
-			}	
+				System.out.println("playerTurnPointer dopo la fine del turno:" + playerTurnPointer);
+			}
 			
 //			
 //			
@@ -192,10 +203,11 @@ public class Game extends Observable {
 //			
 //			if (roundOver == true) {
 //				Player winner = this.players.get(playerTurnPointer);
-//				System.out.println(winner.getNickname() + "è il vincitore del round!");
-//			}
-//			
+//				}
 		}
+		
+		Player winner = winners.get(0);
+		System.out.println("The winner of the round is " + winner + ". So " + winners.toString() + " will be dealt less a card in the next round (next level).");
 		
 	}
 	
@@ -275,6 +287,7 @@ public class Game extends Observable {
 				}
 				else return topCard;
 			}
+			if (this.isLastTurn(hand)) return topCard;
 			else {
 				Scanner inputIndex = new Scanner(System.in);
 			    System.out.print("Where do you want to put the wild card? ");
@@ -336,31 +349,21 @@ public class Game extends Observable {
 	 * 			false: if not.
 	 */
 	public boolean isLastTurn(ArrayList<Card> hand) {
-		boolean check = false;
-		int i = 0;
-		
-		for (Card card : hand) {
-			if (card.isFaceUp() == true) i++;
-		}
-//		System.out.println(i);
-		
-		if (i==10) check = true;
-		
-		return check;
+		return hand.stream()
+	               .filter(Card::isFaceUp)
+	               .count() == 10;
 	}
 	
 	public boolean allCardsInPlace(ArrayList<Card> hand) {
-		boolean check = false;
-		int i = 0;
+		return IntStream.range(0, 10)
+                .allMatch(i -> hand.stream()
+                                  .anyMatch(card -> card.getIntValue() == i));
+}
+
+	@Override
+	public void onScoreUpdate(int gamesWon, int gamesLost) {
+		// TODO Auto-generated method stub
 		
-		for (Card card : hand) {
-			if (card.getIntValue() == i) 
-				i++;
-		}
-		
-		if (i==10) check = true;
-		
-		return check;
 	}
 
 }

@@ -37,7 +37,7 @@ public class DiscardDeck implements Deck {
 
 	@Override
 	public Card drawCard() {
-		return this.cards.remove(0);
+		return this.cards.remove(size() - 1);
 	}
 	
 	@Override
