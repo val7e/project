@@ -35,16 +35,20 @@ public class DiscardDeck implements Deck {
 		else return false;
 	}
 
+	/**
+	 * Removes and returns the last element from the Discard Deck.
+	 */
 	@Override
 	public Card drawCard() {
 		return this.cards.remove(size() - 1);
 	}
-	
+	// TO REMOVE
 	@Override
 	public boolean removeCard(Card card) {
 		return this.cards.remove(card);
 	}
-
+	
+	// TO REMOVE
 	@Override
 	public String getDeck() {
 		return this.cards.toString();

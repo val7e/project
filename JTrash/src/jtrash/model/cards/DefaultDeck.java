@@ -33,10 +33,6 @@ public class DefaultDeck implements Deck {
 				else cards.add(new Card(suit, value, Type.NUMBER, false));
 			}
 		}
-//		for (int i = 0; i < 1; i++) {
-//			cards.add(new Joker(Color.BLACK, false));
-//			cards.add(new Joker(Color.RED, false));
-//		}
 		
 		for (Color color : Color.values()) {
 			cards.add(new Joker(color, false));
@@ -48,7 +44,7 @@ public class DefaultDeck implements Deck {
 	/**
 	 * A public method that is invoked inside calculateDecks in the Game class.
 	 * It takes an ArrayList<Card> and concatenates it to another.
-	 * @param toConcat
+	 * @param toConcat the deck
 	 */
 	public void merge(ArrayList<Card> toConcat) {
 		this.cards.addAll(toConcat);
@@ -73,16 +69,20 @@ public class DefaultDeck implements Deck {
 		else return false;
 	}
 	
+	/**
+	 * Remove the first element from the Default Deck.
+	 */
 	@Override
 	public Card drawCard() {
 		return this.cards.remove(0);
 	}
-	
+	// TO REMOVE
 	@Override
 	public boolean removeCard(Card card) {
 		return this.cards.remove(card);
 	}
 	
+	// TO REMOVE
 	@Override
 	public String getDeck() {
 		return this.cards.toString();

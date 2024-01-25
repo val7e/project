@@ -7,7 +7,7 @@ public class Card {
 	protected boolean isFaceUp;
 	
 	/**
-	 * Card costructor without parameters.
+	 * Card constructor without parameters.
 	 */
 	public Card() {
 		
@@ -24,7 +24,6 @@ public class Card {
 		this.value = value;
 		this.type = type;
 		this.setFaceUp(isFaceUp);
-//		this.isFaceUp = true;
 	}
 	
 	/**
@@ -48,7 +47,8 @@ public class Card {
 	}
 	
 	/**
-	 * @return the isFaceUp
+	 * Returns true if the card is face up,
+	 * false if is face down.
 	 */
 	public boolean isFaceUp() {
 		return isFaceUp;
@@ -65,11 +65,21 @@ public class Card {
 	public String toString() {
 		return suit + "_" + value;
 	}
-
+	
+	/**
+	 * Returns the value of the card.
+	 * e.g. card Quadri 8 has int 8.
+	 * @return the value of Card.
+	 */
 	public int getIntValue() {
 		return this.getValue().getInt();
 	}
 	
+	/**
+	 * Returns the index of the card, meaning the value of the card less 1. 
+	 * e.g. card Quadri 8 has index 7.
+	 * @return the index of Card.
+	 */
 	public int getIndexValue() {
 		int x = this.getValue().getInt();
 		int y = 1;
