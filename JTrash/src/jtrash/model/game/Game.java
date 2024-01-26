@@ -7,6 +7,7 @@ import jtrash.model.players.*;
 import jtrash.model.cards.*;
 
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.stream.IntStream;
@@ -132,14 +133,15 @@ public class Game implements Observer {
 		 */
 		
 		
-		int playerTurnPointer = 0;
-		int turnCounter = 0;
+		
+
 		
 		
 		gameLoop: while (!gameOver) {
 			prepareGame(players); // to handle
 			roundOver = false;
 			winners.clear();
+			int playerTurnPointer = 0;
 			
 			
 			roundLoop: while (!roundOver) {
@@ -153,7 +155,6 @@ public class Game implements Observer {
 					if (winners.contains(player)) {
 						roundOver = true;
 						roundCounter++;
-						playerTurnPointer = 0;
 						break roundLoop;
 					}	
 					
@@ -207,7 +208,7 @@ public class Game implements Observer {
 					}
 					
 					playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
-					System.out.println("playerTurnPointer dopo la fine del turno:" + playerTurnPointer);
+//					System.out.println("playerTurnPointer dopo la fine del turno:" + playerTurnPointer);
 				}
 				
 //				
@@ -292,17 +293,18 @@ public class Game implements Observer {
 		if (topCard.getIntValue() == 12) return topCard; // 12 equals Jack and Queen
 		
 		// if the player has ONLY one card that is Ace(1)/Wild(11)
-		if (hand.size()==1 && (topCard.getIntValue()==1 || topCard.getIntValue()==11)) return topCard;
+//		if (hand.size()==1 && (topCard.getIntValue()==1 || topCard.getIntValue()==11)) return topCard;
+//		if (hand.size() == 1 && hand.get(0).isFaceUp()) return topCard;
 		
 		// if is wild: 11 equals King and Joker
 		if (topCard.getIntValue() == 11) {
 			// base case
 			if (hand.size() == 1) {
-				Card card = hand.get(intTopCard);
+				Card card = hand.get(0);
 				if (!card.isFaceUp()) {
-					hand.remove(intTopCard);
-					hand.add(intTopCard, topCard);
-					hand.get(intTopCard).setFaceUp(true);
+					hand.remove(0);
+					hand.add(0, topCard);
+					hand.get(0).setFaceUp(true);
 					return card;
 				}
 				else return topCard;
@@ -311,23 +313,25 @@ public class Game implements Observer {
 			else {
 				Scanner inputIndex = new Scanner(System.in);
 			    System.out.print("Where do you want to put the wild card? ");
+			    intTopCard = -1;
 			    
-			    String str = inputIndex.next();
-			    try {
-			    	intTopCard = Integer.parseInt(str)-1;
-			        // check if the input gave by the player corresponds to a face down up and
-			    	// returns a error message because it is not valid, keeps asking until the player enters a valid input
-			    	// CONTROLLO SUGLI INDICI ANCHE QUI
-			        while (intTopCard >= hand.size() || hand.get(intTopCard).isFaceUp()) {
-			            System.out.println("Input non valido. Inserisci la posizione di una carta non girata:");    
-			            intTopCard = inputIndex.nextInt()-1;
-			        }
-			    } catch (NumberFormatException e) {
-			    	e.printStackTrace();
-			    }	
+			    while (true) {
+			    	try {
+			    		String str = inputIndex.next();
+				    	intTopCard = Integer.parseInt(str)-1;
+				    	
+				        if (intTopCard < 0 || intTopCard >= hand.size() || hand.get(intTopCard).isFaceUp()) {
+				            System.out.println("Input not valid. Give the position of covered card:");
+				        } else break; // input is valid so exit the loop
+				    } catch (NumberFormatException | InputMismatchException e) {
+				    	System.out.println("Input not valid. Give a valid int.");
+				    	inputIndex.nextLine();
+				    }
+				    
+			    }
+
 			
 			    Card card = hand.get(intTopCard);
-			    //gestire lo swap
 			    hand.remove(intTopCard);
 				hand.add(intTopCard, topCard);
 				hand.get(intTopCard).setFaceUp(true);
@@ -338,15 +342,13 @@ public class Game implements Observer {
 			}
 
 		}
-		if (intTopCard >= hand.size()) return topCard; // control for the rounds > 0 (where one or more player are dealt less a card.)
+		
+		// control for the rounds > 0 (where one or more player are dealt less a card.)
+		if (intTopCard >= hand.size()) return topCard; 
 		
 		// saving the card to swap in card variable
 		Card card = hand.get(intTopCard);
-//		if (card.isFaceUp()) {
-//			System.out.println("La carta da scartare è girata, quindi non potrei.");
-//		} else System.out.println("La carta da scartare è coperta quindi posso scambiarla.");
-//		
-		
+
 		if (this.isSwappable(topCard, hand)) {
 			// removing the card from the hand
 			hand.remove(intTopCard);
@@ -374,6 +376,13 @@ public class Game implements Observer {
 	               .allMatch(Card::isFaceUp);
 	}
 	
+	
+	/**
+	 * I don't know if i need this method at all.
+	 * This method checks if all the cards are placed in the correspondent index.
+	 * @param hand
+	 * @return
+	 */
 	public boolean allCardsInPlace(ArrayList<Card> hand) {
 	    return IntStream.range(0, hand.size())
 	            .allMatch(i -> hand.get(i).getIntValue() == i);
