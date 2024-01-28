@@ -300,6 +300,7 @@ public class Game implements Observer {
 		if (topCard.getIntValue() == 11) {
 			// base case
 			if (hand.size() == 1) {
+				// i do not ask where to place the wildcard because there's only one slot, is it correct?
 				Card card = hand.get(0);
 				if (!card.isFaceUp()) {
 					hand.remove(0);
