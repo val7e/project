@@ -7,23 +7,25 @@ import jtrash.model.players.*;
 import jtrash.model.cards.*;
 
 import java.util.ArrayList;
-import java.util.InputMismatchException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.Scanner;
-import java.util.stream.IntStream;
+import java.util.List;
 
 
 /**
  * @author val7e
  *
  */
-public class Game implements Observer {
+public class Game {
 	private DefaultDeck deck;
 	private DiscardDeck discardDeck;
+	private int numPlayers;
+	private String username;
 	private ArrayList<Player> players;
 	private LinkedHashMap<Player,ArrayList<Card>> playersMap;
-	int roundCounter;
+	private int roundCounter;
 	private ArrayList<Player> winners = new ArrayList<Player>();
+	private List<Observer> observers;
 	
 	
 	/**
@@ -31,23 +33,32 @@ public class Game implements Observer {
 	 * @param numPlayers an int that stands for the number of players useful to calculate how many decks do we need,
 	 * @param listPlayers an ArrayList of objects Player.
 	 */
-	public Game(int numPlayers, ArrayList<Player> listPlayers) {
+	public Game() {
+		this.numPlayers = 0;
+		this.username = "";
+		this.observers = new ArrayList<>();
+	}
+	
+	/**
+	 * 
+	 * @param numPlayers
+	 * @param username
+	 */
+	public void initialzeGame(int numPlayers, String username) {
 		int howManyDecks = calculateDecks(numPlayers);
 		buildDecks(howManyDecks);
+		ArrayList<Player> listPlayers = new ArrayList<Player>();
+		//building list of players based on number of players given in main
+	    listPlayers.add(new Player(username, "IconUser", false));
+		List<String> botNames = Arrays.asList("Jim", "Pam", "Dwight");
+		List<String> botAvatar = Arrays.asList("IconJim", "IconPam", "IconDwight");
+		int limit = numPlayers-1;
+		for (int i = 0; i < limit; i++) {
+			listPlayers.add(new Player(botNames.get(i), botAvatar.get(i), true));
+		}
 		this.players = listPlayers;
-//		int roundCounter = 0;
 		prepareGame(players);
-		
-		
-//		NON POSSO CREARE LISTA PLAYERS DENTRO GAME
-//		this.players = new ArrayList<Player>();
-//		Player user = new Player("Vale");
-//		
-//		while (numPlayers != 0) {
-//			Player jim = new Player("Jim");
-//			jim.setIsBot(true);
-//		}
-		
+		start();
 	}
 	
 	/**
@@ -105,37 +116,22 @@ public class Game implements Observer {
 	
 	/**
 	 * The method that is invoked to actually start the game; it contains all the core logic of the card game.
-	 * @param roundCounter 
+	 * 
+	 * GAME OVER: the game goes on until one player is only dealt one card. 
+	 * They must fill that spot with an Ace or wildcard. 
+	 * If they do so and they say "Trash", this ends the entire game.
+	 * 
+	 * ROUND OVER: when at least one player completes his hand (says "Trash").
+	 * In the next round winners are dealt one less card.
+	 * The others are dealt the same amount of card than the round before.
+	 * Max 10 rounds, then the game is over. (Not implemented, TO MODIFY).
+	 *  
 	 */
 	public void start() {
 
-		// boolean to handle the game (TO HANDLE)
-		/**
-		 * GAME OVER: the game goes on until one player is only dealt one card. 
-		 * They must fill that spot with an Ace or wildcard. 
-		 * If they do so and they say “Trash,” this ends the entire game.
-		 * 
-		 */
-		boolean gameOver = false;
-		
-		// boolean to handle the rounds
-		
-		/**
-		 * ROUND OVER: when at least one player completes his hand.
-		 * In the next round winners are dealt one less card.
-		 * The others are dealt the same amount of card than the round before.
-		 * Max 10 rounds, then the game is over.
-		 */
-		boolean roundOver = false;
+		boolean gameOver = false; // boolean to handle the game
 
-		/*
-		 * winners: list that is updated after the end of each round.
-		 */
-		
-		
-		
-
-		
+		boolean roundOver = false; // boolean to handle the rounds
 		
 		gameLoop: while (!gameOver) {
 			prepareGame(players); // to handle
@@ -154,7 +150,7 @@ public class Game implements Observer {
 					
 					if (winners.contains(player)) {
 						roundOver = true;
-						roundCounter++;
+						roundCounter++; // roundCounter 
 						break roundLoop;
 					}	
 					
@@ -187,7 +183,6 @@ public class Game implements Observer {
 						
 					}
 					
-					
 					// swap it if you have a face down slot
 					cardToSwap = swap(cardToSwap, hand);	
 					discardDeck.add(cardToSwap);
@@ -205,22 +200,9 @@ public class Game implements Observer {
 							gameOver = true;
 							break gameLoop;
 						}
-					}
-					
+					}	
 					playerTurnPointer = (playerTurnPointer + 1) % this.players.size();
-//					System.out.println("playerTurnPointer dopo la fine del turno:" + playerTurnPointer);
 				}
-				
-//				
-//				
-//				if (lastTurn == true) {
-//					roundOver = true;
-//					Player winner = this.players.get(playerTurnPointer);
-//				}
-//				
-//				if (roundOver == true) {
-//					Player winner = this.players.get(playerTurnPointer);
-//					}
 			}
 			
 			Player winner = winners.get(0);
@@ -229,7 +211,6 @@ public class Game implements Observer {
 			for (Player player : winners) {
 				player.incrementLevel();
 			}
-			
 		}
 		
 		for (Player player : players) {
@@ -263,22 +244,20 @@ public class Game implements Observer {
 		if (topCard.getIntValue() == 11) return true; // 11 equals King and Joker
 		if (index >= hand.size()) return false; // control for the rounds > 0 (where one or more player are dealt less a card.)
 		System.out.println(index + " < " + hand.size());
-		// TRY CATCH TO REMOVE
-		try {
-			System.out.println("La carta nel discard deck e': " + topCard.getIntValue());
-			System.out.print("Nella hand ha la carta: " + hand.get(index));
-			if (hand.get(index).isFaceUp()) System.out.println(" che e' scoperta.");
-			else System.out.println(" che e' coperta.");
-		}
-		catch (IndexOutOfBoundsException e) {
-			e.printStackTrace();
-		}
+//		// TRY CATCH TO REMOVE
+//		try {
+//			System.out.println("La carta nel discard deck e': " + topCard.getIntValue());
+//			System.out.print("Nella hand ha la carta: " + hand.get(index));
+//			if (hand.get(index).isFaceUp()) System.out.println(" che e' scoperta.");
+//			else System.out.println(" che e' coperta.");
+//		}
+//		catch (IndexOutOfBoundsException e) {
+//			e.printStackTrace();
+//		}
 		// checking if the card in the hand is face up but the slot in the hand is kept by a wild card
 		if (hand.get(index).isFaceUp() && hand.get(index).getType() == Type.WILD) return true;
 		else return !hand.get(index).isFaceUp();
 	}
-	
-	
 
 	/**
 	 * A method that swaps the card at the index intTopCard with the card just pulled out
@@ -291,10 +270,6 @@ public class Game implements Observer {
 		int intTopCard = topCard.getIndexValue();
 		// if a NOT USEFUL CARD is dealt it return it and it will be discarded.
 		if (topCard.getIntValue() == 12) return topCard; // 12 equals Jack and Queen
-		
-		// if the player has ONLY one card that is Ace(1)/Wild(11)
-//		if (hand.size()==1 && (topCard.getIntValue()==1 || topCard.getIntValue()==11)) return topCard;
-//		if (hand.size() == 1 && hand.get(0).isFaceUp()) return topCard;
 		
 		// if is wild: 11 equals King and Joker
 		if (topCard.getIntValue() == 11) {
@@ -312,36 +287,8 @@ public class Game implements Observer {
 			}
 			if (this.isLastTurn(hand)) return topCard;
 			else {
-				Scanner inputIndex = new Scanner(System.in);
-			    System.out.print("Where do you want to put the wild card? ");
-			    intTopCard = -1;
-			    
-			    while (true) {
-			    	try {
-			    		String str = inputIndex.next();
-				    	intTopCard = Integer.parseInt(str)-1;
-				    	
-				        if (intTopCard < 0 || intTopCard >= hand.size() || hand.get(intTopCard).isFaceUp()) {
-				            System.out.println("Input not valid. Give the position of covered card:");
-				        } else break; // input is valid so exit the loop
-				    } catch (NumberFormatException | InputMismatchException e) {
-				    	System.out.println("Input not valid. Give a valid int.");
-				    	inputIndex.nextLine();
-				    }
-				    
-			    }
-
-			
-			    Card card = hand.get(intTopCard);
-			    hand.remove(intTopCard);
-				hand.add(intTopCard, topCard);
-				hand.get(intTopCard).setFaceUp(true);
-				
-				System.out.println("Posiziona " + topCard + " e si ritrova in mano " + card);
-				
-			    return swap(card, hand);
+				intTopCard = notifyObserversOnWildcardDrawn(hand);
 			}
-
 		}
 		
 		// control for the rounds > 0 (where one or more player are dealt less a card.)
@@ -360,9 +307,9 @@ public class Game implements Observer {
 			System.out.println("Metto " + topCard +  " all'indice " + intTopCard + " cioè alla posizione " + topCard.getIntValue() + " e pesco " + card);
 			return swap(card, hand);
 		}
-		return card;
-		
+		return card;	
 	}
+	
 	
 	/**
 	 * A method that checks if the current player has completed the hand.
@@ -377,23 +324,32 @@ public class Game implements Observer {
 	               .allMatch(Card::isFaceUp);
 	}
 	
+	/**
+	 * 
+	 * @param observer
+	 */
+	public void addObserver(Observer observer) {
+		observers.add(observer);
+	}
 	
 	/**
-	 * I don't know if i need this method at all.
-	 * This method checks if all the cards are placed in the correspondent index.
+	 * 
+	 * @param observer
+	 */
+	public void removeObvserver(Observer observer) {
+		observers.remove(observer);
+	}
+	
+	/**
+	 * 
 	 * @param hand
 	 * @return
 	 */
-	public boolean allCardsInPlace(ArrayList<Card> hand) {
-	    return IntStream.range(0, hand.size())
-	            .allMatch(i -> hand.get(i).getIntValue() == i);
+	private int notifyObserversOnWildcardDrawn(ArrayList<Card> hand) {
+		int index = 0;
+		for (Observer observer : observers) {
+			index = observer.onWildcardDrawn(hand);
+		}
+		return index;
 	}
-
-
-	@Override
-	public void onScoreUpdate(int gamesWon, int gamesLost) {
-		// TODO Auto-generated method stub
-		
-	}
-
 }
