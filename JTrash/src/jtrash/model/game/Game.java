@@ -49,12 +49,12 @@ public class Game {
 		buildDecks(howManyDecks);
 		ArrayList<Player> listPlayers = new ArrayList<Player>();
 		//building list of players based on number of players given in main
-	    listPlayers.add(new PlayerBot(username, "IconUser", false));
+	    listPlayers.add(new Player(username, "IconUser", false));
 		List<String> botNames = Arrays.asList("Jim", "Pam", "Dwight");
 		List<String> botAvatar = Arrays.asList("IconJim", "IconPam", "IconDwight");
 		int limit = numPlayers-1;
 		for (int i = 0; i < limit; i++) {
-			listPlayers.add(new Player(botNames.get(i), botAvatar.get(i), true));
+			listPlayers.add(new PlayerBot(botNames.get(i), botAvatar.get(i), true));
 		}
 		this.players = listPlayers;
 		prepareGame(players);
