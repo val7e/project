@@ -49,7 +49,7 @@ public class Game {
 		buildDecks(howManyDecks);
 		ArrayList<Player> listPlayers = new ArrayList<Player>();
 		//building list of players based on number of players given in main
-	    listPlayers.add(new Player(username, "IconUser", false));
+	    listPlayers.add(new PlayerBot(username, "IconUser", false));
 		List<String> botNames = Arrays.asList("Jim", "Pam", "Dwight");
 		List<String> botAvatar = Arrays.asList("IconJim", "IconPam", "IconDwight");
 		int limit = numPlayers-1;
@@ -184,7 +184,7 @@ public class Game {
 					}
 					
 					// swap it if you have a face down slot
-					cardToSwap = swap(cardToSwap, hand);	
+					cardToSwap = swap(cardToSwap, hand, player);	
 					discardDeck.add(cardToSwap);
 					System.out.println(player.getNickname() + " scarta " + cardToSwap);
 					
@@ -265,7 +265,7 @@ public class Game {
 	 * @param hand the hand of cards of the player.
 	 * @return the card to discard.
 	 */
-	public Card swap(Card topCard, ArrayList<Card> hand) {
+	public Card swap(Card topCard, ArrayList<Card> hand, Player player) {
 		// computes the index of the card from its value.
 		int intTopCard = topCard.getIndexValue();
 		// if a NOT USEFUL CARD is dealt it return it and it will be discarded.
@@ -286,6 +286,10 @@ public class Game {
 				else return topCard;
 			}
 			if (this.isLastTurn(hand)) return topCard;
+			else if (player.getIsBot()) {
+				intTopCard = findFirstNotFaceUpCard(hand);
+				System.out.println(player.getNickname() + " sceglie " + intTopCard);
+			}
 			else {
 				intTopCard = notifyObserversOnWildcardDrawn(hand);
 			}
@@ -305,7 +309,7 @@ public class Game {
 			// setting the isFaceUp value to true in the swapped card
 			hand.get(intTopCard).setFaceUp(true);
 			System.out.println("Metto " + topCard +  " all'indice " + intTopCard + " cioè alla posizione " + topCard.getIntValue() + " e pesco " + card);
-			return swap(card, hand);
+			return swap(card, hand, player);
 		}
 		return card;	
 	}
@@ -323,6 +327,14 @@ public class Game {
 	    return hand.stream()
 	               .allMatch(Card::isFaceUp);
 	}
+	
+	public static int findFirstNotFaceUpCard(ArrayList<Card> hand) {
+        return hand.stream()
+                   .filter(card -> !card.isFaceUp())
+                   .findFirst()
+                   .map(hand::indexOf)
+                   .orElse(-1);
+    }
 	
 	/**
 	 * 
