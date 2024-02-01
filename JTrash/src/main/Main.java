@@ -1,19 +1,23 @@
 package main;
 
+import javax.swing.SwingUtilities;
+
 import jtrash.controller.GameController;
 import jtrash.model.game.Game;
+import jtrash.view.GameView;
 
 public class Main {
     public static void main(String[] args) {
-        // Create the game model, view, and controller
+        // Create instances of game model, view, and controller
     	Game model = new Game();
-        GameController controller = new GameController(model);
-        // Create the view if needed
+    	GameView view = new GameView();
+    	
+        GameController controller = new GameController(model, view);
         
+        SwingUtilities.invokeLater(() -> view.setVisible(true));
         // Start the game
-        controller.collectGameSetup(); // Collect initial setup information
-//        controller.performGameActions(); // Perform game actions
-        
+//        controller.collectGameSetup(); // Collect initial setup information
+
         // Close any resources if needed
         controller.closeScanner(); // Close the scanner used for input
     }
