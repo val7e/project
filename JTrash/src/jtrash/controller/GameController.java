@@ -4,7 +4,8 @@ import jtrash.model.cards.Card;
 import jtrash.model.game.Game;
 import jtrash.model.game.Observer;
 import jtrash.view.GameView;
-import jtrash.view.NewProfileView;
+import jtrash.view.NewProfileDialog;
+import jtrash.view.StartingScreen;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,8 +13,7 @@ import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
+import javax.swing.JPanel;
 
 public class GameController implements Observer {
     private GameView view;
@@ -24,31 +24,26 @@ public class GameController implements Observer {
         this.model = model;
         this.view = view;
         this.model.addObserver(this);
+        view.setVisible(true);
         
         
      // Add ActionListener to start button
         this.view.addStartButtonListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // When start button is clicked, show new profile button and profile panel
-                view.showNewProfileButton();
-                view.showProfilePanel();
-            }
-        });
-
-     // Add ActionListener to new profile button
-        this.view.addNewProfileButtonListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // When new profile button is clicked, show NewProfileView
-                new NewProfileView();
+//                view.showMenuFrame();
+            	view.showMenuFrame();
             }
         });
         
-       
     }
     
-
+    
+    public void collectGameSetup(String username, String avatar) {
+    	int numPlayers = 2;
+        model.initialzeGame(numPlayers, username);
+//        view.displayGameOverMessage();
+    }
 	/**
 	 * 
 	 * @param hand
