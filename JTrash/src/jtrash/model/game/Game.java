@@ -16,16 +16,15 @@ import java.util.List;
  * @author val7e
  *
  */
-public class Game {
+public class Game extends Observable {
 	private DefaultDeck deck;
 	private DiscardDeck discardDeck;
-	private int numPlayers;
-	private String username;
 	private ArrayList<Player> players;
 	private LinkedHashMap<Player,ArrayList<Card>> playersMap;
 	private int roundCounter;
 	private ArrayList<Player> winners = new ArrayList<Player>();
 	private List<Observer> observers;
+	private int wildcardPlace;
 	
 	
 	/**
@@ -34,8 +33,6 @@ public class Game {
 	 * @param listPlayers an ArrayList of objects Player.
 	 */
 	public Game() {
-		this.numPlayers = 0;
-		this.username = "";
 		this.observers = new ArrayList<>();
 	}
 	
@@ -44,14 +41,14 @@ public class Game {
 	 * @param numPlayers
 	 * @param username
 	 */
-	public void initialzeGame(int numPlayers, String username) {
+	public void initialzeGame(int numPlayers, String username, String avatar) {
 		int howManyDecks = calculateDecks(numPlayers);
 		buildDecks(howManyDecks);
 		ArrayList<Player> listPlayers = new ArrayList<Player>();
 		//building list of players based on number of players given in main
-	    listPlayers.add(new Player(username, "IconUser", false));
+	    listPlayers.add(new Player(username, avatar, false));
 		List<String> botNames = Arrays.asList("Jim", "Pam", "Dwight");
-		List<String> botAvatar = Arrays.asList("IconJim", "IconPam", "IconDwight");
+		List<String> botAvatar = Arrays.asList("graphics/iconJim.png", "graphics/iconPam.png", "graphics/iconDwight.png");
 		int limit = numPlayers-1;
 		for (int i = 0; i < limit; i++) {
 			listPlayers.add(new PlayerBot(botNames.get(i), botAvatar.get(i), true));
@@ -213,15 +210,18 @@ public class Game {
 			}
 		}
 		
-		for (Player player : players) {
-			if (winners.contains(player)) {
-				player.addGamesWon();
-			} else player.addGamesLost();
-		}
-		
 		Player winner = winners.get(0);
 		System.out.println("GAME OVER: The winner of the game is " + winner + "!!");
+		// setting scores and levels
+		for (Player player : players) {
+			if (player.equals(winner)) player.addGamesWon();
+			else player.addGamesLost();
+		}
 		
+		for (Player player : players) {
+			System.out.println(player + " W: " + player.getGamesWon() + " L: " + player.getGamesLost());
+		}
+		notifyObserversOnWinnerScoreUpdate(winner);
 	}
 	
 	/**
@@ -244,16 +244,7 @@ public class Game {
 		if (topCard.getIntValue() == 11) return true; // 11 equals King and Joker
 		if (index >= hand.size()) return false; // control for the rounds > 0 (where one or more player are dealt less a card.)
 		System.out.println(index + " < " + hand.size());
-//		// TRY CATCH TO REMOVE
-//		try {
-//			System.out.println("La carta nel discard deck e': " + topCard.getIntValue());
-//			System.out.print("Nella hand ha la carta: " + hand.get(index));
-//			if (hand.get(index).isFaceUp()) System.out.println(" che e' scoperta.");
-//			else System.out.println(" che e' coperta.");
-//		}
-//		catch (IndexOutOfBoundsException e) {
-//			e.printStackTrace();
-//		}
+
 		// checking if the card in the hand is face up but the slot in the hand is kept by a wild card
 		if (hand.get(index).isFaceUp() && hand.get(index).getType() == Type.WILD) return true;
 		else return !hand.get(index).isFaceUp();
@@ -286,12 +277,14 @@ public class Game {
 				else return topCard;
 			}
 			if (this.isLastTurn(hand)) return topCard;
-			else if (player.getIsBot()) {
+			else if (player.getIsBot()) { 
 				intTopCard = findFirstNotFaceUpCard(hand);
 				System.out.println(player.getNickname() + " sceglie " + intTopCard);
 			}
 			else {
-				intTopCard = notifyObserversOnWildcardDrawn(hand);
+				notifyObserversOnWildcardDrawn(hand);
+				intTopCard = wildcardPlace;
+				System.out.println(player.getNickname() + " sceglie " + intTopCard);
 			}
 		}
 		
@@ -357,11 +350,21 @@ public class Game {
 	 * @param hand
 	 * @return
 	 */
-	private int notifyObserversOnWildcardDrawn(ArrayList<Card> hand) {
-		int index = 0;
+	public void notifyObserversOnWildcardDrawn(ArrayList<Card> hand) {
 		for (Observer observer : observers) {
-			index = observer.onWildcardDrawn(hand);
+			observer.onWildcardDrawn(hand);
 		}
-		return index;
 	}
+	
+	public void notifyObserversOnWinnerScoreUpdate(Player winner) {
+		for (Observer observer : observers) {
+			observer.onWinnerScoreUpdate(winner);
+		}
+	}
+	
+	public int getWildcardPlace(int place) {
+		this.wildcardPlace = place;
+		return place;
+	}
+	
 }

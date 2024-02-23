@@ -3,12 +3,15 @@ package jtrash.model.game;
 import java.util.ArrayList;
 
 import jtrash.model.cards.Card;
+import jtrash.model.players.Player;
 
 public interface Observer {
 	
-	int onWildcardDrawn(ArrayList<Card> hand);
+	void update(ArrayList<Card> hand);
 	
-	void onScoreUpdate(int gamesWon, int gamesLost);
+	void onWildcardDrawn(ArrayList<Card> hand);
+	
+	void onWinnerScoreUpdate(Player player);
 	
 	
 }
