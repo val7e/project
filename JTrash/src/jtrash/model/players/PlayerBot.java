@@ -8,10 +8,11 @@ package jtrash.model.players;
  *
  */
 public class PlayerBot extends Player {
+	
+	
+	public PlayerBot(String nickname, String avatar) {
+        super(nickname, avatar, true); // PlayerBot is a bot
+    }
 
-	public PlayerBot(String nickname, String avatar, boolean isBot) {
-		super(nickname, avatar, isBot);
-		// TODO Auto-generated constructor stub
-	}
 	
 }

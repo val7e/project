@@ -8,8 +8,8 @@ package jtrash.model.cards;
  *
  */
 public enum Suit {
-	CUORI,
-	QUADRI,
-	FIORI,
-	PICCHE;
+	HEARTS,
+	DIAMONDS,
+	CLUBS,
+	SPADES;
 }

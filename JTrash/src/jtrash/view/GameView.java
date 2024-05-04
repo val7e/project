@@ -2,20 +2,25 @@ package jtrash.view;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
+/**
+ * The class of the view.
+ * @author val7e
+ *
+ */
 public class GameView extends JFrame {
 	
-	
 	private JWindow win; // window for the welcome gif
-	private JWindow over;
-	private AudioManager audioWin;
-	private AudioManager audioLost;
-	private AudioManager audioTheme;
+	
 	private Color bg = new Color(63, 115, 85);
 	
 	
@@ -33,23 +38,28 @@ public class GameView extends JFrame {
 	private JButton profileButton, player2Button, player3Button, player4Button;
 	
     private JDialog newProfileDialog;
-    private JLabel usernameLabel, avatarLabel;
-    private JTextField usernameTextField;
-    private ImageIcon imageIcon;
+
+	private JLabel usernameLabel, avatarLabel;
+    private static JTextField usernameTextField;
+    private static ImageIcon imageIcon;
     private JButton chooseAvatarButton, saveButton;
     
     
-    protected GameFrame gamePanel;
-    
+    /**
+     * Public constructor.
+     */
     public GameView() {
     	
     	displayWelcomeGif();
     	displayStartFrame();
     	displayMenuPanel();
+    	
     }
 
     
-    
+    /**
+     * A method that shows a JWindow with a welcome animation to the game.
+     */
     private void displayWelcomeGif() {
     	// welcome gif, has a timeout
         win = new JWindow();
@@ -69,8 +79,10 @@ public class GameView extends JFrame {
         }
     }
      
+    /**
+     * A method that builds the start frame of the GUI.
+     */
     private void displayStartFrame() {
-    	// Set up the frame
     	setTitle("JTrash Game");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 700);
@@ -94,7 +106,19 @@ public class GameView extends JFrame {
         ImageIcon img = new ImageIcon("graphics/game.gif");
         startGameGif = new JLabel();
         startGameGif.setIcon(img);
-        
+        startGameGif.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        startGameGif.addMouseListener(new MouseAdapter() {
+        	 
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI("https://www.wikihow.com/Play-Trash"));
+                } catch (IOException | URISyntaxException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+ 
         startButton = buttonBuilder(startButton, "START");
         
         homePanel.add(startGameGif);
@@ -106,6 +130,9 @@ public class GameView extends JFrame {
         
     }
 
+    /**
+     * A method that builds the menu panel that will be added to the start frame.
+     */
     private void displayMenuPanel() {
     	menuPanel = new JPanel(new GridBagLayout());
     	GridBagConstraints c = new GridBagConstraints();
@@ -152,6 +179,10 @@ public class GameView extends JFrame {
      	getContentPane().setBackground(bg);
     }
     
+    
+    /**
+     * A method that is invoked after the user has entered the information asked by the new profile dialog.
+     */
 	public void showMenuPanel() {
     	this.setTitle("JTrash Menu");
     	buttonPanel.remove(startButton);
@@ -159,34 +190,18 @@ public class GameView extends JFrame {
     	this.add(menuPanel);
     }
 	
-    public void backButton () {
-    	
-//    	startButton = buttonBuilder(startButton, "BACK");
-//    	startButton.addActionListener(new ActionListener() {
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				menuPanel.setVisible(false);
-//				buttonPanel.remove(startButton);
-//				displayStartFrame();
-//				
-//			}
-//    		
-//    	});
-//    	buttonPanel.add(startButton);
-//    	add(buttonPanel,BorderLayout.SOUTH);
-    	 	
-    }
-    
+    /**
+     * A method that shows 
+     */
 	public void openNewProfileDialog() {
 		newProfileDialog = dialogBuilder(newProfileDialog,"New Profile");
     	newProfileDialog.setVisible(true);
 	}
 	
-	public void closeNewProfileDialog() {
-		newProfileDialog.setVisible(false);
-		profileButton.setVisible(false);
+	public void gameMenu() {
 		hiLabel.setText("Hi " + getUsername() + "!");
 		hiLabel.setVisible(true);
+		profileButton.setVisible(false);
 		hiGif.setVisible(true);
 		gameMode.setVisible(true);
 		player2Button.setVisible(true);
@@ -210,10 +225,15 @@ public class GameView extends JFrame {
         return button;
     }
     
-
+    /**
+     * This method builds a new profile dialog.
+     * @param dialog
+     * @param title
+     * @return the dialog.
+     */
     private JDialog dialogBuilder(JDialog dialog, String title) {
     	dialog = new JDialog();
-    	dialog.setTitle("Create a new profile DAVVERO");
+    	dialog.setTitle("Create a new profile");
     	dialog.setSize(600, 400);
     	dialog.setLocationRelativeTo(null);
     	dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -289,33 +309,7 @@ public class GameView extends JFrame {
         
     }
 
-    public void displayWinMessage() {
-    	over = new JWindow();
-        over.setSize(480,400);
-        over.setLocationRelativeTo(null);
-        ImageIcon img = new ImageIcon("graphics/win1.gif");
-        JLabel gameOver = new JLabel();
-        gameOver.setIcon(img);
-        audioWin = AudioManager.getInstance();
-        audioWin.play("audioTracks/audioWin.wav");
-        over.getContentPane().add(gameOver);
-        over.setVisible(true);
-    }
-    
-    public void displayGameOverMessage() {
-    	over = new JWindow();
-        over.setSize(480,400);
-        over.setLocationRelativeTo(null);
-        ImageIcon img = new ImageIcon("graphics/lose1.gif");
-        JLabel gameOver = new JLabel();
-        gameOver.setIcon(img);
-        audioLost = AudioManager.getInstance();
-        audioLost.play("audioTracks/audioLost.wav");
-        over.getContentPane().add(gameOver);
-        over.setVisible(true);
-    }
-    
-    // ActionListener 
+    // ActionListeners
     
     public void addStartButtonListener(ActionListener listenerForStartButton) {
         startButton.addActionListener(listenerForStartButton);
@@ -330,7 +324,6 @@ public class GameView extends JFrame {
 	}
 	
 	public void addGame2Listener(ActionListener game2Listener) {
-		System.out.println("adding action listener");
 		player2Button.addActionListener(game2Listener);
 	}
 	
@@ -342,19 +335,27 @@ public class GameView extends JFrame {
 		player4Button.addActionListener(game4Listener);
 	}
 	
-	/**
-	 * 
-	 * @return
+	// DA QUI IN POI METODI PER FAR PARLARE LA VIEW CON IL MODEL ==========================================================
+	
+
+	public JDialog getNewProfileDialog() {
+		return newProfileDialog;
+	}
+	
+	/** 
+	 * A method that returns the username of the PlayerUser.
+	 * @return the username of the PlayerUser
 	 */
-	public String getUsername() {
+	public static String getUsername() {
 	    return usernameTextField.getText();
 	}   
 	
 	/**
-	 *
-	 * @return
+	 * A method that return the avatar of the PlayerUser.
+	 * @return the avatar of the PlayerUser
 	 */
-	public String getAvatar() {
+	public static String getAvatar() {
     	return imageIcon.getDescription();
 	}
+	
 }

@@ -1,284 +1,388 @@
 package jtrash.view;
 
-import Model.Hand;
-import Model.Notification;
-import Model.Player;
-import Utilities.Pair;
-import View.NotifyHandlers.DiscardHandler;
-import View.NotifyHandlers.DrawHandler;
-import View.NotifyHandlers.FillHandHandler;
-import View.NotifyHandlers.HandHandler;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 import javax.swing.*;
-import java.awt.*;
-import java.util.Observable;
-import java.util.Observer;
+import javax.swing.border.Border;
 
-import static java.lang.Integer.valueOf;
+import jtrash.model.cards.Card;
+import jtrash.model.game.Observer;
+import jtrash.model.players.Player;
 
 /**
- * Frame che implementa l'interfaccia Observer e che mostra tutto il frame di gioco.
- * Istanzia e alloca tutti gli elementi interni al frame del gioco, riproduce file audio in accordo con lo svolgimento
- * della partita, riceve notifiche dall'Observable per gli eventi.
+ * 
+ * Actual game frame:
+ * it has the game table, divided in panels, one for each player.
+ * It plays the background audio.
+ * It gets updates from the model (the Observable) to show changes based on the events of the game.
+ * @author val7e
+ *
  */
-@SuppressWarnings("deprecation")
-public class GameFrame extends JFrame {
+public class GameFrame extends JFrame implements Observer {
+	
+	private Color bg = new Color(63, 115, 85);
+	
+	private AudioManager audioTheme;
+	private JButton defaultDeck;
+	private JButton discardDeck;
 
-    /**
-     * LayeredPane che rappresenta il tavolo da gioco
-     */
     private final JLayeredPane tablePanel;
-    /**
-     * Pannello che rappresenta il Mazzo di carte
-     */
-    private final DeckPanel deckPanel;
-    /**
-     * Pannello che rappresenta la pila degli scarti
-     */
-    private final DiscardPanel discardPanel;
-    /**
-     * Pannello che rappresenta lo spazio dove la carta
-     * pescata (o scambiata) viene mostrata all'utente
-     * per una UX fluida
-     */
-    private final JPanel drawnCardPanel;
-    /**
-     * Array di Pannelli che rappresentano lo spazio dedicato a ciascun giocatore
-     * sul tavolo
-     */
-    private final JPanel[] playerPanels;
+    
 
-    /**
-     * Costruisce la classe a partire dal numero di giocatori
-     * imposta la finestra, la sua dimensione e posizione, il titolo
-     * e inizializza i componenti al suo interno.
-     * Nota questo Frame NON utilizza un LayoutManager, i componenti
-     * sono disposti secondo precisi calcoli.
-     * Non è quindi possibile fare il resize della finestra di gioco
-     * @param numberOfPlayers numero di giocatori
-     */
-    public GameFrame(int numberOfPlayers) {
+
+	private GridLayout rotated = new GridLayout(5, 2);
+    
+    private final JPanel[] playerPanels;
+    private final JLabel[] playerLabels;
+	private ArrayList<Player> players;
+	
+	private LinkedHashMap<Player, ArrayList<JLabel>> mapLabels;
+	private ArrayList<JLabel> arrayCardsLabels;
+	private JLabel cardLabel;
+	private JLabel drawnCard; 
+
+
+	/**
+	 * Public constructor.
+	 * @param numPlayers
+	 */
+	public GameFrame(int numPlayers) {
         setTitle("JTrash");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(false);
-        setSize(1280,720);
+        setSize(1300,750);
         setLocationRelativeTo(null);
-        setLayout(null);
+        getContentPane().setLayout(null);
+        
 
-        // Initialize all the components
         tablePanel = new JLayeredPane();
-        deckPanel = new DeckPanel();
-        discardPanel = new DiscardPanel();
-        playerPanels = new JPanel[numberOfPlayers];
-        drawnCardPanel = new JPanel();
+        playerPanels = new JPanel[numPlayers];
+        playerLabels = new JLabel[numPlayers];
+        mapLabels = new LinkedHashMap<>();
+        
+        buildTable();
+        buildDecksPanel();
+        buildPlayerUser();
 
-        // Table Panel initialization
-        InitializeTable();
-        InitializeDeckNDiscard();
-        // UI Sud
-        InitializeSouthPlayer();
-
-        switch (numberOfPlayers) {
-            case 2 -> initTwoPlayerGame();
-            case 3 -> initTreePlayerGame();
-            case 4 -> initFourPlayerGame();
+        switch (numPlayers) {
+            case 2 -> build2PlayersGame();
+            case 3 -> build3PlayersGame();
+            case 4 -> build4PlayersGame();
         }
 
-        // setting up the Drawn panel
-        drawnCardPanel.setBackground(Color.white);
-        drawnCardPanel.setBounds(350, 250,144,192);
-        drawnCardPanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        drawnCardPanel.setVisible(false);
-        tablePanel.add(drawnCardPanel, valueOf(5));
+        // setting background audio
+        audioTheme = AudioManager.getInstance();
+        audioTheme.play("audioTracks/audioTheme.wav");
+        
 
-        add(tablePanel, BorderLayout.CENTER);
+        getContentPane().add(tablePanel, BorderLayout.CENTER);
+        setVisible(true);
     }
 
-    /**
-     * Inizializza il pannello del giocatore uno in caso di partita
-     * a due giocatori, ovvero il pannello in alto
-     * (quello in basso è sempre il pannello del giocatore "Umano")
-     */
-    private void initTwoPlayerGame() {
-        InitializeNorthPlayer(1);
+    private void build2PlayersGame() {
+        buildNorthPlayerBot(1, "Jim");
     }
 
-    /**
-     * Inizializza due pannelli per una partita a tre giocatori.
-     * Notare che in questa configurazione il giocatore uno diventa quello
-     * a SX, mentre quello in alto è il giocatore due, questo per garantire
-     * un corretto svolgimento dell'alternanza dei turni in senso orario
-     */
-    private void initTreePlayerGame() {
-        InitializeNorthPlayer(2);
-        InitializeWestPlayer();
+    private void build3PlayersGame() {
+    	buildWestPlayerBot();
+        buildNorthPlayerBot(2, "Pam");    
     }
 
-    /**
-     * Inizializza tutti e tre gli altri pannelli per una partita da Quattro giocatori
-     * in questa configurazione tutti i lati sono occupati, ma il giocatore umano occupa sempre la posizione
-     * in basso.
-     */
-    private void initFourPlayerGame() {
-        InitializeWestPlayer();
-        InitializeNorthPlayer(2);
-        InitializeEastPlayer();
+    private void build4PlayersGame() {
+        buildWestPlayerBot();
+        buildNorthPlayerBot(2, "Pam");
+        buildEastPlayerBot();
     }
 
-    /**
-     * @param idx indice del pannello desiderato
-     * @return pannello del giocatore
-     */
-    public JPanel getPlayerPanel(int idx) {return this.playerPanels[idx];}
-
-    /**
-     * Inizializza il Pannello del tavolo, impostandone il colore di Background
-     */
-    private void InitializeTable() {
+    private void buildTable() {
         // Table Panel initialization
-        tablePanel.setBounds(0,0,1280,700);
-        tablePanel.setBackground(new Color(0,102,0));
+        tablePanel.setBounds(0,0,1286,750);
+        tablePanel.setBackground(bg);
         tablePanel.setOpaque(true);
     }
 
-    /**
-     * Inizializza i pannelli di Mazzo e pila degli scarti,
-     * assegnandone la posizione all'interno del Frame e impostando i ToolTip
-     * per una corretta accessibilità
-     */
-    private void InitializeDeckNDiscard() {
-        discardPanel.setToolTipText("Click to draw the Top Card");
-        discardPanel.setBounds(557, 285, 78, 114);
-        tablePanel.add(discardPanel, valueOf(1));
+    private void buildDecksPanel() {
+    	discardDeck = new JButton();
+    	discardDeck.setBounds(557, 300, 78, 114);
+        tablePanel.add(discardDeck);
 
-        deckPanel.setToolTipText("Click to draw a Card");
-        deckPanel.setBounds(645, 285, 78, 114);
-        tablePanel.add(deckPanel, valueOf(1));
+        defaultDeck = new JButton();
+        defaultDeck.setIcon(new ImageIcon("cards/BACK.png"));
+        defaultDeck.setBounds(645, 300, 78, 114);
+        tablePanel.add(defaultDeck);
     }
 
+    
     /**
-     * Inizializza un Pannello del giocatore, in posizione verticale od orizzontale
-     * @param rotated true -> pannello in verticale, false -> pannello in orizzontale
-     * @return il Pannello creato
+     * Builds the player panel in which are going to be displayed the cards.
+     * @param straight boolean, true: the panel has to be displayed straight, false the panel has to be rotated of 90 degrees.
+     * @param username String, is added to the border of the panel.
+     * @return the built playerPanel
      */
-    private JPanel createPlayerPanel(boolean rotated) {
+    private JPanel createPlayerPanel(boolean straight, String username) {
         JPanel playerPanel;
-        if (rotated)
-            playerPanel = new JPanel(new GridLayout(5, 2));
+        if (straight)
+            playerPanel = new JPanel(new GridLayout(2, 5));
         else
-            playerPanel  = new JPanel(new GridLayout(2, 5));
+            playerPanel  = new JPanel(rotated);
 
         playerPanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        playerPanel.setBackground(new Color(0,102,0));
-
+        playerPanel.setBackground(bg);
+        
+        Border border = BorderFactory.createTitledBorder(username);
+        playerPanel.setBorder(border);
         return playerPanel;
     }
+    
+    /**
+     * Builds the player label, giving each player the correct avatar.
+     * user -> TO HANDLE
+     * @param name of the player
+     * @return the player label
+     */
+    private JLabel createPlayerLabel(int name) {
+    	JLabel playerLabel = new JLabel();
+    	ImageIcon jim = new ImageIcon("graphics/iconJim.png");
+        ImageIcon pam = new ImageIcon("graphics/iconPam.png");
+        ImageIcon dwight = new ImageIcon("graphics/iconDwight.png");
+        ImageIcon user = new ImageIcon(GameView.getAvatar());
+    	switch (name) {
+    	case 0 -> playerLabel = new JLabel(user);
+    	case 1 -> playerLabel = new JLabel(jim);
+		case 2 -> playerLabel = new JLabel(pam);
+		case 3 -> playerLabel = new JLabel(dwight);
+    		}
+		return playerLabel;
+    }
 
     /**
-     * Inizializza il pannello del giocatore umano,
-     * sempre disposto nella parte bassa dello schermo
+     * Builds the playerUser panel.
      */
-    private void InitializeSouthPlayer() {
-        playerPanels[0] = createPlayerPanel(false);
+    private void buildPlayerUser() {
+        playerPanels[0] = createPlayerPanel(true, GameView.getUsername());
         playerPanels[0].setBounds(420,430,440,250);
-        this.tablePanel.add(playerPanels[0], valueOf(0));
+        this.tablePanel.add(playerPanels[0]);
+        
+        playerLabels[0] = createPlayerLabel(0);
+        playerLabels[0].setBounds(344, 608, 70, 70);
+        this.tablePanel.add(playerLabels[0]);
     }
 
     /**
-     * Inizializza il pannello del giocatore in alto, che puo essere
-     * sia il giocatore uno che il due a seconda del numero di giocatori totali
-     * @param pos la posizione che il giocatore ricopre nel totale
+     * Builds the panel for botPlayer1 (Jim) in a 2 players game.
+     * Builds the panel for botPlayer2 (Pam) in a 3 players game.
+     * @param index the index of the player in the playerPanels array.
      */
-    private void InitializeNorthPlayer(int pos) {
-        playerPanels[pos] = createPlayerPanel(false);
-        playerPanels[pos].setBounds(420,10,440,250);
-        this.tablePanel.add(playerPanels[pos], valueOf(0));
+    private void buildNorthPlayerBot(int index, String botName) {
+        playerPanels[index] = createPlayerPanel(true, botName);
+        playerPanels[index].setBounds(420,30,440,250);
+        this.tablePanel.add(playerPanels[index]);
+        
+        playerLabels[index] = createPlayerLabel(index);
+        playerLabels[index].setBounds(344, 38, 70, 70);
+        this.tablePanel.add(playerLabels[index]); 
     }
 
     /**
-     * Inizializza il pannello del giocatore di sinistra, se presente è sempre il giocatore uno
+     * Builds the panel for botPlayer1 (Jim).
      */
-    private void InitializeWestPlayer() {
-        playerPanels[1] = createPlayerPanel(true);
-        playerPanels[1].setBounds(25,150,250,440);
-        this.tablePanel.add(playerPanels[1], valueOf(0));
+    private void buildWestPlayerBot() {
+        playerPanels[1] = createPlayerPanel(false, "Jim");
+        playerPanels[1].setBounds(30,150,250,440);
+        this.tablePanel.add(playerPanels[1]);
+        
+        playerLabels[1] = createPlayerLabel(1);
+        playerLabels[1].setBounds(30, 79, 70, 70);
+        this.tablePanel.add(playerLabels[1]);   
     }
 
     /**
-     * Inizializza il pannello del giocatore a destra, se presente è sempre il giocatore 3
+     * Builds the panel for botPlayer3 (Dwight).
      */
-    private void InitializeEastPlayer() {
-        playerPanels[3] = createPlayerPanel(true);
-        playerPanels[3].setBounds(1000,150,250,440);
-        this.tablePanel.add(playerPanels[3],  valueOf(0));
+    private void buildEastPlayerBot() {
+        playerPanels[3] = createPlayerPanel(false, "Dwight");
+        playerPanels[3].setBounds(1010,150,250,440);
+        this.tablePanel.add(playerPanels[3]);
+        
+        playerLabels[3] = createPlayerLabel(3);
+        playerLabels[3].setBounds(1186, 79, 70, 70);
+        this.tablePanel.add(playerLabels[3]);   
     }
 
-    /**
-     *
-     * @return il pannello del Deck
-     */
-    public DeckPanel getDeckPanel() {
-        return deckPanel;
+    
+    
+    
+    public JPanel getPlayerPanel(int index) {
+    	return this.playerPanels[index];
     }
-
-    /**
-     *
-     * @return Il pannello degli scarti
-     */
-    public DiscardPanel getDiscardPanel() {
-        return discardPanel;
+    
+    public void setTopCard(Card card) {
+    	String path = card.getPath();
+    	ImageIcon img = getScaledImage(path, false);
+		discardDeck.setIcon(img);
     }
-
+    
     /**
-     *
-     * @return il pannello di appoggio della carta pescata
+     * This method is invoked for scaling the card so it can be displayed correctly throughout the game.
+     * @param path is a String in which is stored the card png path.
+     * @param zoom is a boolean, it can be:
+     * 		- true: to have a zoomed card, usually to be displayed in the drawnLabel
+     * 		- false: to have a normal card, the standard size which is 78 x 114
+     * 			
+     * @return an ImageIcon of the card png
      */
-    public JPanel getDrawnCardPanel() {
-        return drawnCardPanel;
+    private ImageIcon getScaledImage(String path, boolean zoom) {
+    	ImageIcon imageIcon = new ImageIcon(path); // load the image to a imageIcon
+    	Image image = imageIcon.getImage(); // transform it
+    	Image newimg;
+    	if (zoom) newimg = image.getScaledInstance(144, 192, Image.SCALE_SMOOTH); // scale it the smooth way but zoomed 
+    	else newimg = image.getScaledInstance(78, 114, Image.SCALE_SMOOTH); // scale it the smooth way  
+    	imageIcon = new ImageIcon(newimg);  // transform it back
+    	return imageIcon;
     }
-
-    /**
-     * Resetta i pannelli dei Players e degli scarti
-     * utilizzato per fare una transizione da un turno a quello successivo
-     */
-    public void resetTable() {
-        discardPanel.resetPanel();
-        for (JPanel playerPanel : playerPanels)
-            playerPanel.removeAll();
+    // ActionListener
+    
+    public void addDiscardDeckListener(ActionListener discardDeckListener) {
+    	discardDeck.addActionListener(discardDeckListener);
     }
+    
+    public void addDefaultDeckListener(ActionListener defaultDeckListener) {
+    	defaultDeck.addActionListener(defaultDeckListener);
+    }
+    
+    
+    public void initDiscardDeck(Card card) {
+    	String path = card.getPath();
+		ImageIcon img = getScaledImage(path, false);
+		discardDeck.setIcon(img);
+    }
+    
+    public void stop() {
+    	audioTheme.stopAll();
+    	// create a label with winner name!
+    }
+    
+    public void updateDrawnLabel (Card card) {
+    	String path = card.getPath();
+		ImageIcon img = getScaledImage(path, true);
+		this.drawnCard = new JLabel(img);
+		this.drawnCard.setBounds(350,265,144,192);
+		this.drawnCard.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+		this.drawnCard.setBackground(Color.WHITE);
+		this.drawnCard.setVisible(true);
+        tablePanel.add(this.drawnCard, 1);
+    }
+    
+    @Override
+	public void updateDiscardDeck(Card card) {
+    	ImageIcon img = getScaledImage("/JTrash/cards/BLANK.png", false);
+    	if (card != null) img = getScaledImage(card.getPath(), false);
+    	discardDeck.setIcon(img);
+	}
 
-    /**
-     * Override del metodo di Observer, viene invocato quando si riceve un messaggio.
-     * Nel nostro caso l' arg è sempre un oggetto di tipo Notification, creato da me
-     * appositamente per rappresentare il messaggio in modo chiaro e per poter implementare
-     * l'utilizzo del pattern Strategy
-     * @param o     the observable object.
-     * @param arg   an argument passed to the {@code notifyObservers}
-     *                 method. in this runtime will be always of type Notification
-     */
-//    @Override
-//    public void update(Observable o, Object arg) {
-//        Notification n = (Notification) arg;
-//        // Utilizzo lo Strategy pattern
-//        NotifiyHandler handler = null;
-//        switch (n.getType()) {
-//            case FILLHAND -> handler = new FillHandHandler(
-//                    ((Player)n.getObj()).getId(),
-//                    playerPanels[((Player)n.getObj()).getId()],
-//                    n.getNumberOfPlayers()
-//                );
-//            case DRAW -> handler = new DrawHandler(((Model.Card) n.getObj()), drawnCardPanel);
-//
-//            case HAND -> handler = new HandHandler(
-//                    (Pair<Integer, Hand>)n.getObj(),
-//                    playerPanels[((Pair<Integer, Hand>)n.getObj()).getLeft()],
-//                    n.getNumberOfPlayers()
-//            );
-//            case DISCARD -> handler = new DiscardHandler(
-//                    ((Model.Card)n.getObj()),
-//                    discardPanel
-//            );
-//        }
-//        handler.handle();
-//    }
+	@Override
+	public void updateDefaultDeck(Card card) {
+		String path = card.getPath();
+		ImageIcon img = getScaledImage(path, true);
+		card.setFaceUp(true);
+		this.drawnCard = new JLabel(img);
+		this.drawnCard.setBounds(350,265,144,192);
+		this.drawnCard.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+		this.drawnCard.setBackground(Color.WHITE);
+		this.drawnCard.setVisible(true);
+        tablePanel.add(this.drawnCard, 1);
+	}
+
+	@Override
+	public void updatePlayersMap(LinkedHashMap<Player, ArrayList<Card>> map, Card discardCard) {
+		if (discardCard!=null) {
+			updateDiscardDeck(discardCard);
+		}
+		int i = 0;
+		players = new ArrayList<Player>();
+		for (Player player : map.keySet()) {
+			players.add(player);
+			System.out.println(player +" creo mappa");
+			ArrayList<Card> hand = map.get(player);
+			this.arrayCardsLabels = new ArrayList<>();
+			for (Card card : hand) {
+				this.cardLabel = new JLabel();
+				if (card.isFaceUp()) {
+					System.out.println(card + "" + card.isFaceUp() + card.getPath());
+					this.cardLabel.setIcon(getScaledImage(card.getPath(), false));
+				} else this.cardLabel.setIcon(getScaledImage("cards/BACK.png", false));
+				this.arrayCardsLabels.add(this.cardLabel);
+				mapLabels.put(player, arrayCardsLabels);
+			}
+			System.out.println(player + " sto per darti le carte");
+			playerPanels[i].removeAll();
+			for (JLabel card : arrayCardsLabels) {
+				playerPanels[i].add(card);
+			}
+			i++;
+		}
+	}
+	
+	public void updateAfterDraw(LinkedHashMap<Player, ArrayList<Card>> map, Card discardCard) {
+		if (discardCard!=null) {
+			updateDiscardDeck(discardCard);
+		}
+		int i = 0;
+		players = new ArrayList<Player>();
+		for (Player player : map.keySet()) {
+			players.add(player);
+			System.out.println(player +" creo mappa");
+			ArrayList<Card> hand = map.get(player);
+			this.arrayCardsLabels = new ArrayList<>();
+			for (Card card : hand) {
+				this.cardLabel = new JLabel();
+				if (card.isFaceUp()) {
+					System.out.println(card + "" + card.isFaceUp() + card.getPath());
+					this.cardLabel.setIcon(getScaledImage(card.getPath(), false));
+				} else this.cardLabel.setIcon(getScaledImage("cards/BACK.png", false));
+				this.arrayCardsLabels.add(this.cardLabel);
+				mapLabels.put(player, arrayCardsLabels);
+			}
+			System.out.println(player + " sto per darti le carte");
+			playerPanels[i].removeAll();
+			for (JLabel card : arrayCardsLabels) {
+				playerPanels[i].add(card);
+			}
+			i++;
+		}
+	}
+
+	public JLabel getDrawnCard() {
+		return drawnCard;
+	}
+	
+	@Override
+	public int onWildcardDrawn() {
+		return 0;
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onWinnerScoreUpdate(Player player) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void showNotification() {
+		// TODO Auto-generated method stub
+		System.out.println("frame riceve notifica");
+		
+	}
+
+	@Override
+	public void notifyPlayersMap() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

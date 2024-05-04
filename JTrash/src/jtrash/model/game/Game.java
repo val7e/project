@@ -1,6 +1,3 @@
-/**
- * 
- */
 package jtrash.model.game;
 
 import jtrash.model.players.*;
@@ -8,54 +5,75 @@ import jtrash.model.cards.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.InputMismatchException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 /**
  * @author val7e
  *
  */
-public class Game extends Observable {
+public class Game {
 	private DefaultDeck deck;
 	private DiscardDeck discardDeck;
+	
 	private ArrayList<Player> players;
+	private int playerTurnPointer;
+
 	private LinkedHashMap<Player,ArrayList<Card>> playersMap;
+
+	private boolean gameOver;
+	
+	private Player winner;
+	
+	
+
 	private int roundCounter;
 	private ArrayList<Player> winners = new ArrayList<Player>();
+	
+	
 	private List<Observer> observers;
 	private int wildcardPlace;
 	
+	private Card firstCard;
+	
 	
 	/**
-	 * Game constructor: it takes
-	 * @param numPlayers an int that stands for the number of players useful to calculate how many decks do we need,
-	 * @param listPlayers an ArrayList of objects Player.
+	 * Public constructor.
 	 */
 	public Game() {
-		this.observers = new ArrayList<>();
+		this.observers = new ArrayList<Observer>();
 	}
 	
 	/**
-	 * 
-	 * @param numPlayers
-	 * @param username
+	 * A method that initialize the game, builds the list of players.
+	 * It also calls prepareGame(), the final step to set the game.
+	 * @param numPlayers the number of players chosen by the user by GUI
+	 * @param username of the PlayerUser chosen by ProfileDialog (GUI)
+	 * @param avatar of the PlayerUser chosen by ProfileDialog (GUI)
 	 */
-	public void initialzeGame(int numPlayers, String username, String avatar) {
+	public void initializeGame(int numPlayers, String username, String avatar) {
 		int howManyDecks = calculateDecks(numPlayers);
 		buildDecks(howManyDecks);
+		
+		//building list of players based on number of players given in the controller
 		ArrayList<Player> listPlayers = new ArrayList<Player>();
-		//building list of players based on number of players given in main
-	    listPlayers.add(new Player(username, avatar, false));
+		PlayerUser user = PlayerUser.getInstance(username, avatar);
+	    listPlayers.add(user);
 		List<String> botNames = Arrays.asList("Jim", "Pam", "Dwight");
 		List<String> botAvatar = Arrays.asList("graphics/iconJim.png", "graphics/iconPam.png", "graphics/iconDwight.png");
 		int limit = numPlayers-1;
 		for (int i = 0; i < limit; i++) {
-			listPlayers.add(new PlayerBot(botNames.get(i), botAvatar.get(i), true));
+			listPlayers.add(new PlayerBot(botNames.get(i), botAvatar.get(i)));
 		}
 		this.players = listPlayers;
+		System.out.println("model dice: initialize game");
 		prepareGame(players);
-		start();
+		System.out.println("il game è pronto per iniziare.");
 	}
 	
 	/**
@@ -85,7 +103,7 @@ public class Game extends Observable {
 	}
 	
 	/**
-	 * A private method that is called inside the constructor and it does everything that it needs to be done to set the game:
+	 * A private method that is called inside the method initializeGame and it does everything that it needs to be done to set the game:
 	 *  - shuffles the cards
 	 *  - creates the LinkedHashMap with each Player and its ArrayList of cards (hand)
 	 *  - deals the hand of cards to each Player
@@ -107,7 +125,8 @@ public class Game extends Observable {
 			}
 			playersMap.put(player, hand);	
 		}
-		discardDeck.add(deck.drawCard());
+		this.firstCard = deck.drawCard();
+		discardDeck.add(firstCard); // first card of the discard deck
 		
 	}
 	
@@ -121,20 +140,20 @@ public class Game extends Observable {
 	 * ROUND OVER: when at least one player completes his hand (says "Trash").
 	 * In the next round winners are dealt one less card.
 	 * The others are dealt the same amount of card than the round before.
-	 * Max 10 rounds, then the game is over. (Not implemented, TO MODIFY).
+	 * The game is over when the player who is only dealt one card fills it.
 	 *  
 	 */
 	public void start() {
 
-		boolean gameOver = false; // boolean to handle the game
+		this.gameOver = false; // boolean to handle the game
 
 		boolean roundOver = false; // boolean to handle the rounds
 		
-		gameLoop: while (!gameOver) {
+		gameLoop: while (!this.gameOver) {
 			prepareGame(players); // to handle
 			roundOver = false;
 			winners.clear();
-			int playerTurnPointer = 0;
+			this.playerTurnPointer = 0;
 			
 			
 			roundLoop: while (!roundOver) {
@@ -151,7 +170,8 @@ public class Game extends Observable {
 						break roundLoop;
 					}	
 					
-					System.out.println("Turno di: " + player.getNickname());
+				
+					System.out.println(player.getNickname() + "'s turn.");
 					
 					//fetching the hand of the current player
 					ArrayList<Card> hand = this.playersMap.get(player);
@@ -168,22 +188,23 @@ public class Game extends Observable {
 					if (!discardDeck.isEmpty()) {
 						cardToSwap = this.discardDeck.peek();
 					}
+					
 					//check if the top card in discard deck is swappable, if it is proceed to draw it:
 					if (this.isSwappable(cardToSwap, hand)) {
 						cardToSwap = this.discardDeck.drawCard();
-						System.out.println(player.getNickname() + " pesca dal DISCARD DECK " + cardToSwap.toString() + " numero: " + cardToSwap.getIntValue() + " indice: " + cardToSwap.getIndexValue());
+						System.out.println(player.getNickname() + " draws from Discard Deck " + cardToSwap.toString());
 						
 					// else pick a face down card from the default deck and increment turn
 					} else {
 						cardToSwap = this.deck.drawCard();
-						System.out.println(player.getNickname() + " pesca dal DECK " + cardToSwap.toString() + " numero: " + cardToSwap.getIntValue() + " indice: " + cardToSwap.getIndexValue());
+						System.out.println(player.getNickname() + " draw from Deck " + cardToSwap.toString());
 						
 					}
 					
 					// swap it if you have a face down slot
 					cardToSwap = swap(cardToSwap, hand, player);	
 					discardDeck.add(cardToSwap);
-					System.out.println(player.getNickname() + " scarta " + cardToSwap);
+					System.out.println(player.getNickname() + " discards " + cardToSwap);
 					
 					if (isLastTurn(hand)) {
 						
@@ -194,7 +215,7 @@ public class Game extends Observable {
 						// check if game is over
 						if (hand.size() == 1 && hand.get(0).isFaceUp()) {
 							roundOver = true;
-							gameOver = true;
+							this.gameOver = true;
 							break gameLoop;
 						}
 					}	
@@ -202,7 +223,7 @@ public class Game extends Observable {
 				}
 			}
 			
-			Player winner = winners.get(0);
+			winner = winners.get(0);
 			System.out.println("ROUND OVER! The winner is " + winner.getNickname() + ". So " + winners.toString() + " will be dealt less a card in the next round (next level).");
 			
 			for (Player player : winners) {
@@ -210,7 +231,7 @@ public class Game extends Observable {
 			}
 		}
 		
-		Player winner = winners.get(0);
+		winner = winners.get(0);
 		System.out.println("GAME OVER: The winner of the game is " + winner + "!!");
 		// setting scores and levels
 		for (Player player : players) {
@@ -219,9 +240,9 @@ public class Game extends Observable {
 		}
 		
 		for (Player player : players) {
-			System.out.println(player + " W: " + player.getGamesWon() + " L: " + player.getGamesLost());
+			System.out.println(player + " Wins: " + player.getGamesWon() + " Losses: " + player.getGamesLost());
 		}
-		notifyObserversOnWinnerScoreUpdate(winner);
+//		notifyObserversOnWinnerScoreUpdate(winner);
 	}
 	
 	/**
@@ -240,14 +261,28 @@ public class Game extends Observable {
 	 */
 	public boolean isSwappable(Card topCard, ArrayList<Card> hand) {
 		int index = topCard.getIndexValue();
-		if (topCard.getIntValue() == 12) return false; // 12 equals Jack and Queen
-		if (topCard.getIntValue() == 11) return true; // 11 equals King and Joker
-		if (index >= hand.size()) return false; // control for the rounds > 0 (where one or more player are dealt less a card.)
-		System.out.println(index + " < " + hand.size());
+		if (topCard.getIntValue() == 12) {
+			System.out.println(topCard);
+			return false; // 12 equals Jack and Queen
+		}
+		if (topCard.getIntValue() == 11) {
+			System.out.println(topCard);
+			return true; // 11 equals King and Joker
+		}
+		if (index >= hand.size()) {
+			System.out.println("index out of range");
+			return false; // control for the rounds > 0 (where one or more player are dealt less a card.)
+		}
 
 		// checking if the card in the hand is face up but the slot in the hand is kept by a wild card
-		if (hand.get(index).isFaceUp() && hand.get(index).getType() == Type.WILD) return true;
-		else return !hand.get(index).isFaceUp();
+		if (hand.get(index).isFaceUp() && hand.get(index).getType() == Type.WILD) {
+			System.out.println(topCard);
+			return true;
+		}
+		else {
+			System.out.println(topCard);
+			return !hand.get(index).isFaceUp();
+		}
 	}
 
 	/**
@@ -256,7 +291,7 @@ public class Game extends Observable {
 	 * @param hand the hand of cards of the player.
 	 * @return the card to discard.
 	 */
-	public Card swap(Card topCard, ArrayList<Card> hand, Player player) {
+	private Card swap(Card topCard, ArrayList<Card> hand, Player player) {
 		// computes the index of the card from its value.
 		int intTopCard = topCard.getIndexValue();
 		// if a NOT USEFUL CARD is dealt it return it and it will be discarded.
@@ -266,7 +301,7 @@ public class Game extends Observable {
 		if (topCard.getIntValue() == 11) {
 			// base case
 			if (hand.size() == 1) {
-				// i do not ask where to place the wildcard because there's only one slot, is it correct?
+				// i do not ask where to place the wildcard because there's only one slot
 				Card card = hand.get(0);
 				if (!card.isFaceUp()) {
 					hand.remove(0);
@@ -277,14 +312,45 @@ public class Game extends Observable {
 				else return topCard;
 			}
 			if (this.isLastTurn(hand)) return topCard;
-			else if (player.getIsBot()) { 
+			else if (player.isBot()) {
 				intTopCard = findFirstNotFaceUpCard(hand);
-				System.out.println(player.getNickname() + " sceglie " + intTopCard);
+				System.out.println(player.getNickname() + " chooses " + intTopCard);
 			}
 			else {
-				notifyObserversOnWildcardDrawn(hand);
-				intTopCard = wildcardPlace;
-				System.out.println(player.getNickname() + " sceglie " + intTopCard);
+//				notifyObserversOnWildcardDrawn();
+				
+					Scanner inputIndex = new Scanner(System.in);
+				    System.out.print("Where do you want to put the wild card? ");
+				    List<Integer> faceDownCards = IntStream.range(0, hand.size())
+				    		.filter(i -> !hand.get(i).isFaceUp())
+			                .map(i -> i + 1)
+			                .boxed()
+			                .collect(Collectors.toList());
+				    
+				    System.out.println("Your face down cards are: "+ faceDownCards);
+				    intTopCard = -1;
+				    
+				    while (true) {
+				    	try {
+				    		String str = inputIndex.next();
+					    	intTopCard = Integer.parseInt(str)-1;
+					    	
+					        if (intTopCard < 0 || intTopCard >= hand.size() || hand.get(intTopCard).isFaceUp()) {
+					            System.out.println("Input not valid. Give the position of covered card:");
+					        } else break; // input is valid so exit the loop
+					    } catch (NumberFormatException | InputMismatchException e) {
+					    	System.out.println("Input not valid. Give a valid int.");
+					    	inputIndex.nextLine();
+					    }
+				    	faceDownCards = IntStream.range(0, hand.size())
+				                .filter(i -> !hand.get(i).isFaceUp())
+				                .mapToObj(i -> hand.get(i).getIntValue())
+				                .collect(Collectors.toList());
+					    
+				   }
+				
+				System.out.println(player.getNickname() + " chooses the position " + (intTopCard+1));
+
 			}
 		}
 		
@@ -301,12 +367,38 @@ public class Game extends Observable {
 			hand.add(intTopCard, topCard);
 			// setting the isFaceUp value to true in the swapped card
 			hand.get(intTopCard).setFaceUp(true);
-			System.out.println("Metto " + topCard +  " all'indice " + intTopCard + " cioè alla posizione " + topCard.getIntValue() + " e pesco " + card);
+			System.out.println("Puts " + topCard +  " at index " + intTopCard + " and finds " + card);
 			return swap(card, hand, player);
 		}
 		return card;	
 	}
 	
+	/**
+	 * 
+	 * @param topCard
+	 * @param hand
+	 * @param player
+	 * @return
+	 */
+	public Card swapCard (Card topCard, ArrayList<Card> hand, Player player) {
+		int intTopCard = topCard.getIndexValue();
+		Card card = topCard;
+		// if is wild: 11 equals King and Joker
+		if (topCard.getIntValue() == 11) {
+			notifyObserversOnWildcardDrawn();
+		} else {
+			card = hand.get(intTopCard);
+			// removing the card from the hand
+			hand.remove(intTopCard);
+			// adding the swapped card at the correct index
+			hand.add(intTopCard, topCard);
+			// setting the isFaceUp value to true in the swapped card
+			hand.get(intTopCard).setFaceUp(true);
+			discardDeck.add(card);
+			System.out.println("Puts " + topCard +  " at index " + intTopCard  + " and finds " + card);
+		}
+			return card;
+	}
 	
 	/**
 	 * A method that checks if the current player has completed the hand.
@@ -316,12 +408,17 @@ public class Game extends Observable {
 	 * @return 	true: if every card of the hand is face up,
 	 * 			false: if not.
 	 */
-	public boolean isLastTurn(ArrayList<Card> hand) {
+	private boolean isLastTurn(ArrayList<Card> hand) {
 	    return hand.stream()
 	               .allMatch(Card::isFaceUp);
 	}
 	
-	public static int findFirstNotFaceUpCard(ArrayList<Card> hand) {
+	/**
+	 * A method that finds the first not face up card for the PlayerBot.
+	 * @param hand of the PlayerBot
+	 * @return the int of the first not face up card in the hand.
+	 */
+	private static int findFirstNotFaceUpCard(ArrayList<Card> hand) {
         return hand.stream()
                    .filter(card -> !card.isFaceUp())
                    .findFirst()
@@ -329,6 +426,90 @@ public class Game extends Observable {
                    .orElse(-1);
     }
 	
+	
+
+	public void notifyObserversOnWildcardDrawn() {
+		for (Observer observer : observers) {
+			observer.onWildcardDrawn();
+		}
+	}
+//	
+//	public void notifyObserversOnWinnerScoreUpdate() {
+//		for (Observer observer : observers) {
+//			observer.onWinnerScoreUpdate();
+//		}
+//	}
+
+	
+	
+	
+	// METHODS FOR CONTROLLER
+	
+	public int getWildcardPlace(int place) {
+		this.wildcardPlace = place;
+		return place;
+	}
+	
+	public ArrayList<Card> getPlayerHand(Player player) {
+		return playersMap.get(player);
+	}
+	
+//	
+//	public String drawFromDiscard() {
+//		if (discardDeck.isEmpty()) {
+//			return null;
+//		} else {
+//			String path = this.discardDeck.drawCard().getPath();
+//			System.out.println("model dice: "+path);
+//			return path;
+//		}
+//		
+//	}
+//	
+//	public Card getTopCard() {
+//		return this.discardDeck.peek();
+//	}
+//	public Card drawFromDeck() {
+//		return this.deck.drawCard();
+//	}
+
+	
+	
+	//GETTERS
+	public DefaultDeck getDeck() {
+		return deck;
+	}
+
+	public DiscardDeck getDiscardDeck() {
+		return discardDeck;
+	}
+
+	public LinkedHashMap<Player, ArrayList<Card>> getPlayersMap() {
+		return playersMap;
+	}
+	
+	public int getPlayerTurnPointer() {
+		return playerTurnPointer;
+	}
+	
+	
+	public boolean isGameOver() {
+		return gameOver;
+	}
+	
+	public Player getWinner() {
+		return winner;
+	}
+
+	public Card getFirstCard() {
+		return firstCard;
+	}
+	
+	public ArrayList<Player> getPlayers() {
+		return players;
+	}
+	
+	// METHODS FOR OBSERVERS
 	/**
 	 * 
 	 * @param observer
@@ -345,26 +526,13 @@ public class Game extends Observable {
 		observers.remove(observer);
 	}
 	
-	/**
-	 * 
-	 * @param hand
-	 * @return
-	 */
-	public void notifyObserversOnWildcardDrawn(ArrayList<Card> hand) {
+	public void notifyObservers() {
 		for (Observer observer : observers) {
-			observer.onWildcardDrawn(hand);
+			observer.updateDiscardDeck(firstCard);
+			observer.updateDefaultDeck(firstCard);
+			observer.notifyPlayersMap();
 		}
 	}
 	
-	public void notifyObserversOnWinnerScoreUpdate(Player winner) {
-		for (Observer observer : observers) {
-			observer.onWinnerScoreUpdate(winner);
-		}
-	}
-	
-	public int getWildcardPlace(int place) {
-		this.wildcardPlace = place;
-		return place;
-	}
 	
 }

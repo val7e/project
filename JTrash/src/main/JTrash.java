@@ -14,17 +14,10 @@ public class JTrash {
         // Create instances of game model, view, and controller
     	Game model = new Game();
     	GameView view = new GameView();
-        GameController controller = new GameController(model, view); 
+		GameController controller = new GameController(model, view);
+		
         
         view.setVisible(true);
-//        MenuFrame menu = view.getMenuFrame();
-        
-//        menu.setNewProfileListener(controller);
-        // Start the game
-//        controller.collectGameSetup(); // Collect initial setup information
-
-        // Close any resources if needed
-//        controller.closeScanner(); // Close the scanner used for input
     }
     
     

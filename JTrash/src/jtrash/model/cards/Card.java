@@ -87,4 +87,12 @@ public class Card {
 		return z;
 	}
 	
+	/**
+	 * Method to getting the path of each card.
+	 * @return the path of a card.
+	 */
+	public String getPath() {
+		return "cards/" + toString() + ".png";
+	}
+	
 }

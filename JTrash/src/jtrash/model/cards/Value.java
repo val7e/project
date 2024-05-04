@@ -8,16 +8,16 @@ package jtrash.model.cards;
  *
  */
 public enum Value {
-	ASSO(1),
-	DUE(2), 
-	TRE(3), 
-	QUATTRO(4), 
-	CINQUE(5), 
-	SEI(6), 
-	SETTE(7), 
-	OTTO(8), 
-	NOVE(9),
-	DIECI(10),
+	ACE(1),
+	TWO(2), 
+	THREE(3), 
+	FOUR(4), 
+	FIVE(5), 
+	SIX(6), 
+	SEVEN(7), 
+	EIGHT(8), 
+	NINE(9),
+	TEN(10),
 	JACK(12),
 	QUEEN(12),
 	KING(11);

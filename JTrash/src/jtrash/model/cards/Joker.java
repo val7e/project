@@ -30,6 +30,6 @@ public class Joker extends Card {
 	
 	@Override
 	public String toString() {
-		return color + "_JOKER_" + type;
+		return color + "_JOKER";
 	}
 }
